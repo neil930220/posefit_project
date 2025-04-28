@@ -1,0 +1,1 @@
+# foodcam_django

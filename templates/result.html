@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <body>
+    <h1>預測結果</h1>
+    <img src="{{ file_url }}" style="max-width:400px;">
+    <ul>
+      <li>類別：{{ prediction }}</li>
+      <li>信心分數：{{ confidence }}</li>
+      <li>食物面積比：{{ ratio }}</li>
+    </ul>
+    <h2>熱量 & 營養素 推測</h2>
+    <p>{{ gemini }}</p>
+    <a href="{% url 'upload' %}">再試一次</a>
+  </body>
+  {% endblock %}
+

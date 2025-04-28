@@ -1,0 +1,38 @@
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Media uploads
+media/uploads/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore collected static files (not your source static/)
+staticfiles/
+
+# Django SQLite DB (local)
+*.sqlite3
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Environment config
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Temporary or backup files
+*.swp
+*.swo
+*.bak
+*.log
+*.tmp
