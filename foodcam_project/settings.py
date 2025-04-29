@@ -98,11 +98,11 @@ WSGI_APPLICATION = 'foodcam_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE':   'django.db.backends.mysql',
-        'NAME':     'foodcam_db',
-        'USER':     'root',
-        'PASSWORD':  os.getenv('DATABASE_PASSWORD'),
-        'HOST':     '127.0.0.1',
-        'PORT':     '3306',
+        'NAME':      os.getenv('DB_NAME'),
+        'USER':      os.getenv('DB_USER'),
+        'PASSWORD':  os.getenv('DB_PASSWORD'),
+        'HOST':      os.getenv('DB_HOST'),
+        'PORT':      os.getenv('DB_PORT'),
         # Optional: 
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
