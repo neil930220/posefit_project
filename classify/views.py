@@ -29,7 +29,7 @@ transform = transforms.Compose([
 load_dotenv()
 
 # 3) Configure Gemini once
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+genai.configure(api_key=os.getenv("GENAI_API_KEY"))
 gmodel = genai.GenerativeModel(model_name="gemini-2.0-flash")
 
 class_names = [
