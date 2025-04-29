@@ -19,10 +19,14 @@ from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import include, path
 from history.views import HistoryPageView
+from classify.views import upload_image, analyzing_page, result_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('classify.urls')),
+    path('analyzing/', analyzing_page, name='analyzing_page'),
+    path('upload/',   upload_image,  name='upload'),
+    path('result/',   result_page,   name='result_page'),
     path('accounts/', include('accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("history.urls")),
