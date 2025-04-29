@@ -18,11 +18,14 @@ from django.conf import settings
 from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import include, path
+from history.views import HistoryPageView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('classify.urls')),
     path('accounts/', include('accounts.urls')),
+    path("history/", HistoryPageView.as_view(), name="history_page"),
+    path("api/history/", include("history.urls")),
 ]
 
 if settings.DEBUG:

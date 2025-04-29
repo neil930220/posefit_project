@@ -1,16 +1,58 @@
 {% extends "base.html" %}
 {% block content %}
-  <body>
-    <h1>預測結果</h1>
-    <img src="{{ file_url }}" style="max-width:400px;">
-    <ul>
-      <li>類別：{{ prediction }}</li>
-      <li>信心分數：{{ confidence }}</li>
-      <li>食物面積比：{{ ratio }}</li>
-    </ul>
-    <h2>熱量 & 營養素 推測</h2>
-    <p>{{ gemini }}</p>
-    <a href="{% url 'upload' %}">再試一次</a>
-  </body>
-  {% endblock %}
+  <h1>預測結果</h1>
+  <img src="{{ file_url }}" style="max-width:400px;">
+  <ul>
+    <li>類別：{{ prediction }}</li>
+    <li>信心分數：{{ confidence }}</li>
+    <li>食物面積比：{{ ratio }}</li>
+  </ul>
+  <h2>熱量 & 營養素 推測</h2>
+  <p>{{ gemini }}</p>
+  <a href="{% url 'upload' %}">再試一次</a>
 
+  {# hidden form just to get the CSRF token #}
+  <form id="history-form" style="display:none;">
+    {% csrf_token %}
+  </form>
+
+  <script>
+    (async function(){
+      // 🚩 guard: only run on a fresh navigation, not back/forward or reload
+      const navEntries = performance.getEntriesByType("navigation");
+      if (navEntries.length && navEntries[0].type !== "navigate") {
+        console.log("Skipping history save on non‐initial navigation:", navEntries[0].type);
+        return;
+      }
+    
+      // grab CSRF token
+      const csrfToken = document
+        .querySelector('#history-form input[name="csrfmiddlewaretoken"]')
+        .value;
+    
+      // your view must supply these:
+      const detections = {{ detections_json|safe }};
+      const totalCalories = {{ total_calories }};
+    
+      // re-fetch the image
+      const imgResp  = await fetch("{{ file_url }}");
+      const imgBlob  = await imgResp.blob();
+    
+      // build form data
+      const fd = new FormData();
+      fd.append("image", imgBlob, "scan.jpg");
+      fd.append("detections", JSON.stringify(detections));
+      fd.append("total_calories", totalCalories);
+    
+      // POST to DRF endpoint
+      await fetch("/api/history/entries/", {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken },
+        credentials: "same-origin",
+        body: fd,
+      });
+    
+      console.log("History saved.");
+    })();
+    </script>    
+{% endblock %}

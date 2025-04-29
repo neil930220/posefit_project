@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'classify',
+    'rest_framework',
+    'history', 
 ]
 
 MEDIA_URL = '/media/'
