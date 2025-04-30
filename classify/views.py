@@ -1,6 +1,6 @@
 # classify/views.py
 
-import os
+import os, json
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
@@ -9,15 +9,24 @@ from PIL import Image
 import torch, cv2, numpy as np
 from torchvision import transforms
 import google.generativeai as genai
+from torchvision import transforms, models, datasets
 from .forms import PhotoForm
 from dotenv import load_dotenv
 
-# ── Move heavy initialization to module scope so it only happens once ── #
+# ── 1) ENV + Gemini setup ──
+load_dotenv()
+genai.configure(api_key=os.getenv("GENAI_API_KEY"))
+gmodel = genai.GenerativeModel(model_name="gemini-2.0-flash")
 
-# 1) Load your model once
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'models', 'resnet18_food_demo.pt')
-model_classifier = torch.load(MODEL_PATH, map_location='cpu', weights_only=False)
-model_classifier.eval()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model = models.mobilenet_v2(pretrained=False)
+model.classifier[1] = torch.nn.Linear(model.last_channel, 101)  # 101 TW-Food101 classes
+
+model_path = os.path.join(settings.BASE_DIR, "models", "TW_Food101_MobileNetV2.pt")
+state = torch.load(model_path, map_location=device)
+model.load_state_dict(state)
+model.to(device).eval()
 
 # 2) Preprocessing pipeline
 transform = transforms.Compose([
@@ -26,17 +35,8 @@ transform = transforms.Compose([
     # add normalization here if needed
 ])
 
-load_dotenv()
-
-# 3) Configure Gemini once
-genai.configure(api_key=os.getenv("GENAI_API_KEY"))
-gmodel = genai.GenerativeModel(model_name="gemini-2.0-flash")
-
-class_names = [
-    'stir-fried_calamari_broth',
-    'papaya_milk',
-    'stir-fried_loofah_with_clam'
-]
+with open(os.path.join(settings.BASE_DIR, "models","class_names.json")) as f:
+    class_names = json.load(f)
 
 # ── Your single, correct view ── #
 
@@ -83,13 +83,13 @@ def analyzing_page(request):
 
     # 1) Classification
     img = Image.open(image_path).convert("RGB")
-    inp = transform(img).unsqueeze(0)
+    inp = transform(img).unsqueeze(0).to(device)
     with torch.no_grad():
-        out   = model_classifier(inp)
-        probs = torch.softmax(out, dim=1)
-        idx   = torch.argmax(probs, dim=1).item()
-    label = class_names[idx]
-    conf  = probs[0][idx].item()
+        logits = model(inp)
+        probs  = torch.softmax(logits, dim=1)
+        idx    = probs.argmax(dim=1).item()
+        label  = class_names[idx].replace("_", " ")
+        conf   = probs[0, idx].item()
 
     # 2) Area ratio
     arr = np.array(img)[:,:,::-1]
