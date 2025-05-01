@@ -69,6 +69,7 @@ def upload_image(request):
 import json, re
 from django.shortcuts import get_object_or_404, redirect
 from .models import Photo
+from django.http import JsonResponse
 
 def analyzing_page(request):
     photo_id = request.session.get('photo_id')
@@ -121,19 +122,13 @@ def analyzing_page(request):
         'confidence':      f"{conf:.2%}",
         'ratio':           f"{ratio:.2%}",
         'gemini':          gemini_resp,
-        'detections_json': json.dumps(detections, ensure_ascii=False),
+        'detections': detections,
         'total_calories':  est_cal,
     }
     # stash for result view
     request.session['result_data'] = result_data
 
-    return redirect('result_page')
-
-def result_page(request):
-    data = request.session.pop('result_data', None)
-    if not data:
-        return redirect('upload')
-    return render(request, 'result.html', data)
+    return JsonResponse(result_data)
 
 
 
