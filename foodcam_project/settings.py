@@ -42,20 +42,35 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'accounts',
+    'django_vite',
+    'app.accounts',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'classify',
+    'app.classify',
     'rest_framework',
-    'history', 
+    'app.history', 
 ]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Include Vite’s build output in collectstatic / runserver’s static dirs
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+DJANGO_VITE = {
+    "default": {
+        "dev_mode": DEBUG,             # serve via vite dev server when DEBUG=True
+        "dev_server_host": "localhost",
+        "dev_server_port": 5173,       # default Vite port
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -70,16 +85,13 @@ MIDDLEWARE = [
 LOGIN_REDIRECT_URL = 'upload'          # or 'upload'
 LOGOUT_REDIRECT_URL = '/'
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [ BASE_DIR / 'static' ]
-
 ROOT_URLCONF = 'foodcam_project.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
-        'DIRS': [ BASE_DIR / 'templates' ],
+        'DIRS': [ BASE_DIR / 'app' / 'templates' ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

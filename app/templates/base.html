@@ -1,7 +1,10 @@
+{% load django_vite %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  {% vite_hmr_client %}           
+  {% vite_asset 'main.js' %}  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}FoodCam Django{% endblock %}</title>

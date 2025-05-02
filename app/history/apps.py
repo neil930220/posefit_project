@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ClassifyConfig(AppConfig):
+class HistoryConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'classify'
+    name = 'app.history'

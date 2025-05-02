@@ -18,17 +18,17 @@ from django.conf import settings
 from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import include, path
-from history.views import HistoryPageView
-from classify.views import upload_image, analyzing_page
+from app.history.views import HistoryPageView
+from app.classify.views import upload_image, analyzing_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('classify.urls')),
+    path('', include('app.classify.urls')),
     path('analyzing/', analyzing_page, name='analyzing_page'),
     path('upload/',   upload_image,  name='upload'),
-    path('accounts/', include('accounts.urls')),
+    path('accounts/', include('app.accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
-    path("api/history/", include("history.urls")),
+    path("api/history/", include("app.history.urls")),
 ]
 
 if settings.DEBUG:
