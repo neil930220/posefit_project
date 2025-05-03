@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  {% vite_hmr_client %}           
-  {% vite_asset 'main.js' %}  
+  <script type="module" src="http://localhost:5173/@vite/client"></script>
+  <script type="module" src="http://localhost:5173/src/main.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}FoodCam Django{% endblock %}</title>
@@ -35,7 +35,7 @@
   </div>
 
   <nav>
-    <a href="{% url 'upload' %}">首頁</a>
+    <a href="{% url 'index' %}">首頁</a>
     {% if user.is_authenticated %}
       <span>歡迎，{{ user.username }}</span>
       <form action="{% url 'logout' %}" method="post" style="display:inline;">
@@ -54,6 +54,7 @@
       <a href="{% url 'login' %}">登入</a>
       <a href="{% url 'signup' %}">註冊</a>
     {% endif %}
+    <a href="{% url 'classify' %}">上傳</a>
   </nav>
 
   {% if messages %}

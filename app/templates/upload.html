@@ -1,127 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div id="app">
-  <!-- UPLOAD FORM -->
-  <form @submit.prevent="onSubmit">
-    {% csrf_token %}
-    <input type="file" @change="onFileChange" accept="image/*" required>
+<div id="app"></div>
+{% endblock %}
 
-    {% verbatim %}
-    <button type="submit" :disabled="loading" >
-      <span v-if="loading">分析中…</span>
-      <span v-else>上傳並分析</span>
-    </button>
-    {% endverbatim %}
-  </form>
-
-  <!-- STATES -->
-  <div v-if="!result && !loading">
-    <p>請選擇一張圖片並上傳開始分析。</p>
-  </div>
-  {% verbatim %}
-  <div v-else-if="loading">
-    <p>分析中，請稍候…</p>
-  </div>
-  <div v-else>
-    <h2>預測結果</h2>
-    <img :src="result.file_url" style="max-width:400px;">
-
-    <ul>
-      <li>類別：<span v-text="result.prediction"></span></li>
-      <li>信心分數：<span v-text="result.confidence"></span></li>
-      <li>食物面積比：<span v-text="result.ratio"></span></li>
-    </ul>
-
-    <h3>熱量 & 營養素 推測</h3>
-    <p v-text="result.gemini"></p>
-
-    <p>總熱量：<span v-text="result.total_calories"></span> 大卡</p>
-
-    <button @click="reset()">再試一次</button>
-  </div>
-  {% endverbatim %}
-</div>
-
-<!-- Vue 3 -->
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script>
-const { createApp } = Vue;
-
-createApp({
-  data() {
-    return {
-      file: null,
-      loading: false,
-      result: null,
-    };
-  },
-  methods: {
-    onFileChange(e) {
-      this.file = e.target.files[0];
-    },
-    async onSubmit(event) {
-      event.preventDefault(); 
-      if (!this.file) return;
-      this.loading = true;
-      this.result  = null;
-
-      try {
-        const fd = new FormData();
-        fd.append('image', this.file);
-
-        const response = await fetch("{% url 'upload' %}", {
-          method: 'POST',
-          headers: {
-            'X-CSRFToken': document.querySelector('input[name=csrfmiddlewaretoken]').value
-          },
-          body: fd,
-          credentials: 'same-origin',
-        });
-
-        console.log("💡 response result:", response);
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-
-        // 📌 only call json() ONCE
-        const data = await response.json();
-        console.log("💡 API result:", data);
-
-        this.result  = data;
-        this.loading = false;
-
-        // save to history
-        this.saveHistory();
-      } catch(err) {
-        console.error(err);
-        this.loading = false;
-        alert('分析失敗，請稍後再試');
-      }
-    },
-    async saveHistory() {
-      if (!this.result) return;
-      const fd = new FormData();
-      fd.append('image', this.file, this.file.name);
-      fd.append('detections', JSON.stringify(this.result.detections));
-      fd.append('total_calories', this.result.total_calories);
-
-      await fetch('/api/history/entries/', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': document.querySelector('input[name=csrfmiddlewaretoken]').value
-        },
-        body: fd,
-        credentials: 'same-origin'
-      });
-    },
-    reset() {
-      this.file = null;
-      this.result = null;
-      this.$el.querySelector('input[type=file]').value = '';
-    }
-  }
-}).mount('#app');
-
-</script>
+{% block scripts %}
+{% if debug %}
+  <!-- Vite dev server (HMR, ESM) -->
+  <script type="module" src="http://localhost:5173/@vite/client"></script>
+  <script type="module" src="http://localhost:5173/src/main.js"></script>
+{% else %}
+  <!-- Built assets -->
+{% endif %}
 {% endblock %}

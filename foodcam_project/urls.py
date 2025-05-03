@@ -23,9 +23,10 @@ from app.classify.views import upload_image, analyzing_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('app.classify.urls')),
+    path('', include('app.index.urls')),
     path('analyzing/', analyzing_page, name='analyzing_page'),
-    path('upload/',   upload_image,  name='upload'),
+    path('upload/',upload_image, name="upload_image"),
+    path('classify/', include('app.classify.urls')),
     path('accounts/', include('app.accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("app.history.urls")),

@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'   // or react(), etc.
 import { resolve } from 'path'
 
 export default defineConfig({
-  base: '/static/',
+  base: '',
   build: {
     manifest: true,
     outDir: resolve(__dirname, '../assets'),  // match STATICFILES_DIRS below

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'app.classify',
     'rest_framework',
     'app.history', 
+    'app.index',
 ]
 
 MEDIA_URL = '/media/'
@@ -82,8 +83,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-LOGIN_REDIRECT_URL = 'upload'          # or 'upload'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = 'index'     
+LOGOUT_REDIRECT_URL = 'index'
 
 ROOT_URLCONF = 'foodcam_project.urls'
 
