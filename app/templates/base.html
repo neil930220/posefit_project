@@ -3,74 +3,23 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <script type="module" src="http://localhost:5173/@vite/client"></script>
-  <script type="module" src="http://localhost:5173/src/main.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}FoodCam Django{% endblock %}</title>
-  <!-- Optional CSS -->
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    nav a { margin-right: 10px; }
-    .messages { color: green; }
-    .errorlist { color: red; }
-  </style>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <title>{% block title %}FoodCam{% endblock %}</title>
+  
+
+    <!-- Vite HMR & entry -->
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <script type="module" src="http://localhost:5173/src/main.js"></script>
+
 </head>
 <body>
-
-  <div id="loading-overlay" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    z-index: 9999;
-  ">
-    Loading...
-  </div>
-
-  <nav>
-    <a href="{% url 'index' %}">首頁</a>
-    {% if user.is_authenticated %}
-      <span>歡迎，{{ user.username }}</span>
-      <form action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" style="background:none;
-                                     border:none;
-                                     padding:0;
-                                     font:inherit;
-                                     color:blue;
-                                     cursor:pointer;">
-          登出
-        </button>
-        <a href="{% url 'history_page' %}">History</a>
-      </form>
-    {% else %}
-      <a href="{% url 'login' %}">登入</a>
-      <a href="{% url 'signup' %}">註冊</a>
-    {% endif %}
-    <a href="{% url 'classify' %}">上傳</a>
-  </nav>
-
-  {% if messages %}
-    <ul class="messages">
-      {% for msg in messages %}
-        <li>{{ msg }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-
-  <hr>
-
+  <!-- Vue mounts here -->
+  <div id="app"></div>
+</body>
   {% block content %}
   <!-- 這裡由子模板填入頁面內容 -->
   {% endblock %}
-
   <script>
     window.addEventListener('load', function() {
       const loading = document.getElementById('loading-overlay');

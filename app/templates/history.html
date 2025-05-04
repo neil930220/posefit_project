@@ -1,35 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>Your Scan History</h1>
-  <div id="history-list">
-    <p>Loading...</p>
+  <div
+    id="history-list"
+    data-api-url="api/history/"
+  >
+    <!-- Vue will render here -->
   </div>
 
-  <script>
-  (async function(){
-    try {
-      const res = await fetch("/api/history/entries/");
-      const entries = await res.json();
-      const container = document.getElementById("history-list");
+  <script type="module" src="http://localhost:5173/src/main.js"></script>
 
-      if (!entries.length) {
-        container.innerHTML = "<p>No history yet.</p>";
-        return;
-      }
-
-      container.innerHTML = entries.map(e => `
-        <div class="history-entry">
-          <img src="${e.image}" alt="Scan on ${e.created_at}" width="180"/>
-          <p><strong>Total Calories:</strong> ${e.total_calories}</p>
-          <p><strong>Items:</strong> ${e.detections.map(d=>d.item).join(", ")}</p>
-          <p><em>${new Date(e.created_at).toLocaleString()}</em></p>
-        </div>
-      `).join("");
-    } catch(err) {
-      console.error(err);
-      document.getElementById("history-list")
-              .innerHTML = "<p>Error loading history.</p>";
-    }
-  })();
-  </script>
 {% endblock %}

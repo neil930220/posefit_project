@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+{% load django_vite static %}
+<body>
+  <div class="container py-5">
+    <div id="app">
+      <!-- Vue 會渲染 CombinedAuth -->
+      <CombinedAuth />
+    </div>
+  </div>
+</body>
+{% endblock %}

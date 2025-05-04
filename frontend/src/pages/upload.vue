@@ -1,7 +1,7 @@
 <!-- frontend/src/App.vue -->
 <template>
     <form @submit.prevent="onSubmit">
-      <input type="file" @change="onFileChange" accept="image/*" required>
+      <input type="file" @change="onFileChange" accept="image/*" required ref="imageInput">
       <button :disabled="loading">
         <span v-if="loading">分析中…</span>
         <span v-else>上傳並分析</span>
@@ -38,6 +38,18 @@
   import axios from 'axios'
   
   export default {
+    onFileChange(event) {
+      this.file = event.target.files[0];
+    },
+    methods: {
+    reset() {
+      // Your reset logic here
+      this.file = null;
+      this.result = null;
+      this.loading = false;
+      this.$refs.imageInput.value = ""
+    }
+    },
     setup() {
       const file     = ref(null)
       const loading  = ref(false)
@@ -68,16 +80,26 @@
       }
   
       async function saveHistory() {
-        if (!result.value) return
-        const form = new FormData()
-        form.append('image', file.value, file.value.name)
-        form.append('detections', JSON.stringify(result.value.detections))
-        form.append('total_calories', result.value.total_calories)
+        if (!result.value) return;
+
+        try {
+          const form = new FormData();
+          form.append('image', file.value, file.value.name);
+          form.append('detections', JSON.stringify(result.value.detections));
+          form.append('total_calories', result.value.total_calories);
         await axios.post('/api/history/entries/', form, {
-          headers: {'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1]}
-        })
-      }
-  
+          headers: {
+            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1]
+          },
+          withCredentials: true
+        });
+        } catch (error) {
+          if (error.response?.status === 403) {
+            console.warn("⚠️ User not logged in; history not saved.");
+      // Optionally notify the user
+          }
+        }
+    }
       return { file, loading, result, onFileChange, onSubmit }
     }
   }

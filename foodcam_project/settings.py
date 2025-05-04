@@ -42,7 +42,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django_vite',
     'app.accounts',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -54,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'app.history', 
     'app.index',
+    'django_vite',
 ]
 
 MEDIA_URL = '/media/'
@@ -99,6 +99,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.debug',
             ],
         },
     },
