@@ -1,6 +1,6 @@
 <!-- frontend/src/App.vue -->
 <template>
-  <div>
+  <div class="page-wrapper">
     <!-- full‐app loading overlay -->
     <div v-if="loadingApp" class="loading-overlay">
       Loading…
@@ -8,19 +8,21 @@
 
     <header>
       <h1>FoodCam 🍱</h1>
-      <nav>
-        <RouterLink to="/">首頁</RouterLink>
-        <RouterLink to="/classify">上傳</RouterLink>        
-      </nav>
-      <div v-if="user">
+      <nav style="display: flex; justify-content: space-between; align-items: center;" class="navbar">
+      <div class="nav-links">
+          <RouterLink to="/">首頁</RouterLink>
+          <RouterLink to="/classify">上傳</RouterLink>
+      </div> 
+       <div v-if="user" class="auth-links">
         <span>歡迎，{{ user.username }}</span>
         <button @click="logout">登出</button>
         <RouterLink to="/history">歷史紀錄</RouterLink>
       </div>
-      <div v-else>
+      <div v-else class="auth-links">
         <RouterLink to="/accounts/login">登入</RouterLink>
         <RouterLink to="/accounts/signup">註冊</RouterLink>
       </div>
+    </nav>
     </header>
 
     <!-- flash messages -->
@@ -34,7 +36,7 @@
       </div>
     </transition-group>
 
-    <main>
+    <main >
       <!-- your pages here -->
       <RouterView />
     </main>
@@ -70,7 +72,6 @@ function logout() {
   })
 }
 </script>
-
 <style>
 .loading-overlay {
   position: fixed; top: 0; left: 0;

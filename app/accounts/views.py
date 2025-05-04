@@ -4,22 +4,33 @@ from django.http import JsonResponse
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
 from .forms import SignUpForm
+import json
+
+import json
 
 def signup(request):
     if request.method == 'POST':
-        form = SignUpForm(request.POST)
+        # try to parse JSON, fallback to form-encoded
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            data = request.POST
+
+        form = SignUpForm(data)
         if form.is_valid():
             form.save()
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': True})
             return redirect('login')
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                # 回傳欄位錯誤訊息，Status 400
-                return JsonResponse(form.errors, status=400)
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse(form.errors, status=400)
+
     else:
         form = SignUpForm()
+
     return render(request, 'auth.html', {'form': form})
+
 
 # views.py
 from django.contrib.auth import views as auth_views

@@ -13,7 +13,6 @@ async function safeJson(res) {
       const res = await fetch("/api/accounts/user/", {
         credentials: "include",   // send the session cookie
       });
-      console.log(" API result:", res);
       if (!res.ok) return null;
       return await safeJson(res);
     } catch (err) {
