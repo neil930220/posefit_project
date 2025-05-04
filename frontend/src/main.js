@@ -7,10 +7,5 @@ import HistoryList from './components/HistoryList.vue'
 const app = createApp(App);
 app.use(router)
 app.component('CombinedAuth', CombinedAuth);
+app.component('HistoryList',  HistoryList)
 app.mount('#app');
-
-const container = document.getElementById('history-list')
-if (container) {
-  const apiUrl = container.dataset.apiUrl
-  createApp(HistoryList, { apiUrl }).mount(container)
-}

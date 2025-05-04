@@ -73,11 +73,11 @@
         this.errors = {};
         this.nonFieldError = '';
         try {
-          await axios.post('signup/', this.form, {
+          await axios.post('/accounts/signup/', this.form, {
             headers: { 'X-CSRFToken': this.getCSRFToken(), 'X-Requested-With': 'XMLHttpRequest' }
           });
           // 若註冊成功，導向登入頁
-          window.location.href = 'login/';
+          window.location.href = '/accounts/login/';
         } catch (err) {
          console.log('server response:', err.response.data);
           if (err.response && err.response.status === 400) {

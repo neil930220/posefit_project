@@ -1,4 +1,5 @@
 <template>
+    <h1>Your Scan History</h1>
     <div>
       <p v-if="loading">Loading…</p>
       <p v-else-if="!entries.length">No history yet.</p>
@@ -24,20 +25,25 @@
   
   <script setup>
   import { ref, onMounted } from 'vue'
-  
 
   const entries = ref([])
   const loading = ref(true)
   const error = ref(false)
+  const isLoaded  = ref(false)       // ← semaphore
   
   function formatDate(s) {
     return new Date(s).toLocaleString()
   }
   
   onMounted(async () => {
+    if (isLoaded.value) return       // only fetch once
+    loading.value = true
+    entries.value = []
+    isLoaded.value = true
     try {
       const res = await fetch('/api/history/entries/')
-      entries.value = await res.json()
+      const data = await res.json()
+      entries.value = data
     } catch (e) {
       console.error(e)
       error.value = true
@@ -45,6 +51,11 @@
       loading.value = false
     }
   })
+  if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    entries.value = []
+  })
+  }
   </script>
   
   <style scoped>

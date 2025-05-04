@@ -7,14 +7,13 @@
     </div>
 
     <header>
-      <h1>FoodCam 🍱</h1>
       <nav style="display: flex; justify-content: space-between; align-items: center;" class="navbar">
       <div class="nav-links">
           <RouterLink to="/">首頁</RouterLink>
           <RouterLink to="/classify">上傳</RouterLink>
       </div> 
        <div v-if="user" class="auth-links">
-        <span>歡迎，{{ user.username }}</span>
+        <span style="color: #e8e6e3;">歡迎，{{ user.username }}</span>
         <button @click="logout">登出</button>
         <RouterLink to="/history">歷史紀錄</RouterLink>
       </div>
