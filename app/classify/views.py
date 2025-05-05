@@ -62,7 +62,7 @@ def upload_image(request):
     else:
         form = PhotoForm()
 
-    return render(request, 'upload.html', {'form': form})
+    return render(request, 'index.html', {'form': form})
 
 # classify/views.py
 

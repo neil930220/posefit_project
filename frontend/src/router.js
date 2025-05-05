@@ -1,11 +1,10 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import Upload from './pages/upload.vue'
-import SignupForm from './components/SignupForm.vue';
-import LoginForm from './components/LoginForm.vue';
+import SignupForm from './components/SignupForm.vue'
+import LoginForm from './components/LoginForm.vue'
 import Home    from './pages/Home.vue'
-import HistoryList from './components/HistoryList.vue';
-
+import HistoryList from './components/HistoryList.vue'
 
 const routes = [
   { path: '/classify',  component: Upload,  name: 'classify'  },
