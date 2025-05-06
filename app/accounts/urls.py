@@ -6,6 +6,6 @@ urlpatterns = [
     path('signup/', signup, name='signup'),
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    path('user/', current_user, name='current_user'),
+    path('api/user/', current_user, name='current_user'),
     path('messages/', fetch_messages, name='fetch_messages'),
 ]

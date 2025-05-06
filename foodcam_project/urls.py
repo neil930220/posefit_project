@@ -20,6 +20,12 @@ from django.conf.urls.static import static
 from django.urls import include, path
 from app.history.views import HistoryPageView
 from app.classify.views import upload_image, analyzing_page
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,         # optional: verify a token
+    TokenBlacklistView,      # optional: blacklist a refresh token
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +36,11 @@ urlpatterns = [
     path('accounts/', include('app.accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("app.history.urls")),
+    path('api/token/',              TokenObtainPairView.as_view(),  name='token_obtain_pair'),
+    path('api/token/refresh/',      TokenRefreshView.as_view(),     name='token_refresh'),
+    # optional extra endpoints
+    path('api/token/verify/',       TokenVerifyView.as_view(),      name='token_verify'),
+    path('api/token/blacklist/',    TokenBlacklistView.as_view(),   name='token_blacklist'),
 ]
 
 if settings.DEBUG:

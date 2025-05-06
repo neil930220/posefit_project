@@ -59,17 +59,22 @@ class LogoutView(auth_views.LogoutView):
     next_page = reverse_lazy('login')
 
 from django.contrib.auth.decorators import login_required
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
 def current_user(request):
-    if request.user.is_authenticated:
-        u = request.user
-        return JsonResponse({
-            "id": u.id,
-            "username": u.username,
-            "email": u.email,
-        })
-    # not logged in → just return null
-    return JsonResponse(None, safe=False, status=200)
+    user = request.user
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        # add other fields as needed
+    })
 
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required

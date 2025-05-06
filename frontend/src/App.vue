@@ -49,21 +49,17 @@ import { fetchUser, fetchMessages, doLogout } from './services/api'
 // injected loading flag
 const loadingApp = inject('loadingApp')
 
-const user     = ref(null)
-const messages = ref([])
-
-const router = useRouter()
+const user = ref(null);
+const router = useRouter();
 
 onMounted(async () => {
-  user.value     = await fetchUser()
-  messages.value = await fetchMessages()
-})
+  user.value = await fetchUser();
+});
 
-function logout() {
-  doLogout().then(() => {
-    user.value = null
-    router.push('/accounts/login')
-  })
+async function logout() {
+  await doLogout();
+  user.value = null;
+  router.push('/');
 }
 </script>
 
