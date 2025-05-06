@@ -1,34 +1,50 @@
 // src/main.js
 import { createApp, ref } from 'vue'
+import axios from 'axios'
 import App from './App.vue'
 import router from './router'
 import CombinedAuth from './components/CombinedAuth.vue'
 import HistoryList  from './components/HistoryList.vue'
 
+// 0️⃣ — Axios JWT setup
+//   • If you already logged in, grab the token and set it globally
+const initialToken = localStorage.getItem('access_token')
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`
+}
+
+//   • Ensure every new request picks up the freshest token
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+
+// 1️⃣ — Create Vue app
 const app = createApp(App)
 
-// 1️⃣ Create & provide the global loading flag
+// 2️⃣ — Provide a global loading flag for your fake-loading overlay
 const loadingApp = ref(false)
 app.provide('loadingApp', loadingApp)
 
-// 2️⃣ Add fake-loading via router guards
+// 3️⃣ — Router guards to simulate a “page load”
 router.beforeEach((to, from, next) => {
   loadingApp.value = true
-  // simulate 300ms “load”
   setTimeout(() => next(), 300)
 })
-
 router.afterEach(() => {
-  // hide overlay after another 300ms
   setTimeout(() => {
     loadingApp.value = false
   }, 300)
 })
 
-// 3️⃣ Register your global components
+// 4️⃣ — Register global components
 app.component('CombinedAuth', CombinedAuth)
 app.component('HistoryList',  HistoryList)
 
-// 4️⃣ Mount everything
+// 5️⃣ — Use router and mount
 app.use(router)
 app.mount('#app')
