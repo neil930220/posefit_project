@@ -55,11 +55,37 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.history-entry {
-  margin-bottom: 1.5rem;
-  /* …your styles… */
+h1 {
+  margin-bottom: 1rem;
+  text-align: center;
 }
+
+.history-entry {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #1e2021;
+}
+
+.history-entry img {
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
 .text-danger {
-  color: #c00;
+  color: red;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+p {
+  margin: 0.3rem 0;
 }
 </style>
+
+
+
