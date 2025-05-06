@@ -30,7 +30,6 @@ urlpatterns = [
     path('accounts/', include('app.accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("app.history.urls")),
-    path('api/accounts/', include('app.accounts.urls'))
 ]
 
 if settings.DEBUG:

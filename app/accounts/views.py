@@ -29,7 +29,7 @@ def signup(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'auth.html', {'form': form})
+    return render(request, 'index.html', {'form': form})
 
 
 # views.py
@@ -38,7 +38,7 @@ from django.http import JsonResponse
 from django.contrib.auth import login as auth_login
 
 class LoginView(auth_views.LoginView):
-    template_name = 'auth.html'   # 同一份 template 下面掛 Vue
+    template_name = 'index.html'   # 同一份 template 下面掛 Vue
     def post(self, request, *args, **kwargs):
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         form = self.get_form()

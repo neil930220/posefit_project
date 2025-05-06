@@ -10,7 +10,7 @@ async function safeJson(res) {
   
   export async function fetchUser() {
     try {
-      const res = await fetch("/api/accounts/user/", {
+      const res = await fetch("/accounts/user/", {
         credentials: "include",   // send the session cookie
       });
       if (!res.ok) return null;
@@ -23,7 +23,7 @@ async function safeJson(res) {
   
   export async function fetchMessages() {
     try {
-      const res = await fetch("/api/accounts/messages/", {
+      const res = await fetch("/accounts/messages/", {
         credentials: "include",
       });
       if (!res.ok) return [];
@@ -37,7 +37,7 @@ async function safeJson(res) {
   
   export async function doLogout() {
     try {
-      await fetch('/api/accounts/logout/', {
+      await fetch('/accounts/logout/', {
         method: 'POST',
         credentials: 'include',
         headers: { 'X-CSRFToken': getCsrfToken() },

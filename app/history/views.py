@@ -8,7 +8,7 @@ from .serializers import FoodEntrySerializer
 from django.views.generic import TemplateView
 
 class HistoryPageView(TemplateView):
-    template_name = "history.html"
+    template_name = "index.html"
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
