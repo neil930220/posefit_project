@@ -28,6 +28,7 @@ load_dotenv(dotenv_path)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -66,6 +67,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+        'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+        'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/minute',
+        'user': '10/minute',
+    },
 }
 
 from datetime import timedelta
@@ -131,6 +140,29 @@ TEMPLATES = [
     },
 ]
 
+PASSWORD_HASHERS = [
+    # Strongest first
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    # fallback for legacy passwords
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
+
+AUTH_PASSWORD_VALIDATORS = [
+    # Disallows passwords too similar to user attributes
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+
+    # Enforce a minimum length
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+     'OPTIONS': {'min_length': 8}},
+
+    # Forbid common passwords
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+
+    # Prevent entirely numeric passwords
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
 WSGI_APPLICATION = 'foodcam_project.wsgi.application'
 
 
@@ -178,7 +210,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Taipei'  # or your desired timezone
 
 USE_I18N = True
 
@@ -195,5 +227,32 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# settings.py
+
+# 1. Make sure SecurityMiddleware is enabled
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    # … the rest of your middleware…
+]
+
+# 2. Redirect all HTTP → HTTPS
+SECURE_SSL_REDIRECT = True
+
+# 3. Tell Django to trust the X-Forwarded-Proto header (if you’re behind a proxy/load-balancer)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 4. Secure your cookies
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE    = True
+
+# 5. Harden HSTS (HTTP Strict Transport Security)
+#    Browsers will refuse any future HTTP connections for the next year
+SECURE_HSTS_SECONDS            = 31536000   # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD            = True
+
+# 6. Tighten SameSite for cookies
+SESSION_COOKIE_SAMESITE = 'Lax'   # or 'Strict' if you can tolerate more strict CSRF blocking
+CSRF_COOKIE_SAMESITE    = 'Lax'
 
 

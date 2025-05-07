@@ -74,7 +74,11 @@
         this.nonFieldError = '';
         try {
           await axios.post('/accounts/signup/', this.form, {
-            headers: { 'X-CSRFToken': this.getCSRFToken(), 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 
+              'X-CSRFToken': this.getCSRFToken(),
+              'X-Requested-With': 'XMLHttpRequest',
+              'Authorization': ''
+            }
           });
           // 若註冊成功，導向登入頁
           window.location.href = '/accounts/login/';

@@ -6,6 +6,19 @@ import router from './router'
 import CombinedAuth from './components/CombinedAuth.vue'
 import HistoryList  from './components/HistoryList.vue'
 
+const _fetch = window.fetch.bind(window)
+window.fetch = async (input, init = {}) => {
+  const token = localStorage.getItem('access_token')
+  init.headers = {
+    'Content-Type': 'application/json',
+    ...(init.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+  const res = await _fetch(input, init)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res
+}
+
 // 0️⃣ — Axios JWT setup
 //   • If you already logged in, grab the token and set it globally
 const initialToken = localStorage.getItem('access_token')

@@ -51,21 +51,26 @@ export default {
 
         // 3. Set default Authorization header
         axios.defaults.headers.common.Authorization = `Bearer ${data.access}`;
-
         // 4. Redirect home
         window.location.href = '/';
       }
+    
       catch (err) {
-        if (err.response && err.response.status === 401) {
-          // invalid credentials
-          this.nonFieldError = '帳號或密碼錯誤';
-        } else if (err.response && err.response.data) {
-          // validation errors
-          this.errors = err.response.data;
-        } else {
-          this.nonFieldError = '伺服器錯誤，請稍後再試';
-        }
-      }
+        const status = err.response?.status;
+        switch (status) {
+          case 401:
+            this.nonFieldError = '帳號或密碼錯誤';
+            break;
+          case 429:
+            this.nonFieldError = 'too many attempt,try later';
+            break;
+          case 400:
+            this.errors = err.response.data;
+            break;
+          default:
+            this.nonFieldError = '伺服器錯誤，請稍後再試';
+}
+}
       finally {
         this.loading = false;
       }

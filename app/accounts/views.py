@@ -5,9 +5,17 @@ from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
 from .forms import SignUpForm
 import json
+from django_ratelimit.decorators import ratelimit
+from rest_framework import generics
+from rest_framework.permissions import AllowAny
+from .serializers import RegisterSerializer
 
-import json
+class RegisterView(generics.CreateAPIView):
+    authentication_classes = []      # ← disable all authentication
+    permission_classes     = [AllowAny]
+    serializer_class       = RegisterSerializer
 
+@ratelimit(key='ip', rate='5/m', block=True)
 def signup(request):
     if request.method == 'POST':
         # try to parse JSON, fallback to form-encoded
@@ -39,6 +47,7 @@ from django.contrib.auth import login as auth_login
 
 class LoginView(auth_views.LoginView):
     template_name = 'index.html'   # 同一份 template 下面掛 Vue
+    @ratelimit(key='ip', rate='10/m', block=True)
     def post(self, request, *args, **kwargs):
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         form = self.get_form()
@@ -63,18 +72,14 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .serializers import UserSerializer
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def current_user(request):
-    user = request.user
-    return Response({
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        # add other fields as needed
-    })
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)    
 
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
