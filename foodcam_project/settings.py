@@ -165,7 +165,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 WSGI_APPLICATION = 'foodcam_project.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -227,32 +226,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# settings.py
 
-# 1. Make sure SecurityMiddleware is enabled
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    # … the rest of your middleware…
-]
-
-# 2. Redirect all HTTP → HTTPS
-SECURE_SSL_REDIRECT = True
-
-# 3. Tell Django to trust the X-Forwarded-Proto header (if you’re behind a proxy/load-balancer)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# 4. Secure your cookies
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE    = True
-
-# 5. Harden HSTS (HTTP Strict Transport Security)
-#    Browsers will refuse any future HTTP connections for the next year
-SECURE_HSTS_SECONDS            = 31536000   # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD            = True
-
-# 6. Tighten SameSite for cookies
-SESSION_COOKIE_SAMESITE = 'Lax'   # or 'Strict' if you can tolerate more strict CSRF blocking
-CSRF_COOKIE_SAMESITE    = 'Lax'
 
 
