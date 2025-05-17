@@ -11,7 +11,7 @@
         <p><em>{{ formatDate(e.created_at) }}</em></p>
       </div>
     </div>
-    <p v-if="error" class="text-danger">Error loading history.</p>
+    <p v-if="error" class="text-danger">login to view your history record.</p>
   </div>
 </template>
 
@@ -46,10 +46,11 @@ onMounted(async () => {
     // ← make sure this matches your DRF router path!
     entries.value = await authFetch('/api/history/entries/')
   } catch (e) {
-    console.error('fetch history failed:', e)
-    error.value = true
+      const status = e.response?.status;
+      console.error('fetch history failed:', status)
+      error.value = true
   } finally {
-    loading.value = false
+      loading.value = false
   }
 })
 </script>

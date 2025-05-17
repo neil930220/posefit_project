@@ -104,7 +104,7 @@ async function onSubmit() {
     form.append('image', file.value)
     const { data } = await axios.post('api/upload/', form, {
       headers: {
-        Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
       },
       withCredentials: true
     })
@@ -124,20 +124,25 @@ async function onSubmit() {
 
 async function saveHistory() {
   if (!result.value) return
+  const token = localStorage.getItem('access_token')
+  if (!token) return console.warn('⚠️ No token; cannot save history')
+
+  const form = new FormData()
+  form.append('image', file.value, file.value.name)
+  form.append('detections', JSON.stringify(result.value.detections))
+  form.append('total_calories', result.value.total_calories)
+
   try {
-    const form = new FormData()
-    form.append('image', file.value, file.value.name)
-    form.append('detections', JSON.stringify(result.value.detections))
-    form.append('total_calories', result.value.total_calories)
     await axios.post('/api/history/entries/', form, {
       headers: {
-        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1]
+        'Authorization': `Bearer ${token}`,     // ← 一定要帶
+        'Content-Type': 'multipart/form-data'
       },
-      withCredentials: true
+      withCredentials: false                  // ← 不送 cookie
     })
-  } catch (error) {
-    if (error.response?.status === 403) {
-      console.warn('⚠️ User not logged in; history not saved.')
+  } catch (err) {
+    if (err.response?.status === 401) {
+      console.warn('⚠️ Unauthorized—please login to save history.')
     }
   }
 }

@@ -12,6 +12,10 @@ from django.conf import settings
 import google.generativeai as genai
 import os, json
 from rest_framework.permissions import AllowAny 
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.http import JsonResponse
 
 # ── Load your model + pipeline once ──
 
@@ -41,8 +45,9 @@ with open(os.path.join(settings.BASE_DIR, "models","class_names.json")) as f:
 # ── The single combined endpoint ──
 
 class UploadAndAnalyze(APIView):
-    parser_classes   = [MultiPartParser]
+    parser_classes = [MultiPartParser]
     permission_classes = [AllowAny]
+    authentication_classes = []  # 不做任何認證
 
     def post(self, request, format=None):
         file_obj = request.data.get('image')
@@ -70,24 +75,26 @@ class UploadAndAnalyze(APIView):
         food_area  = max((cv2.contourArea(c) for c in ctrs), default=0)
         image_area = arr.shape[0] * arr.shape[1]
         ratio      = food_area / image_area
+        if conf > 90 :     
+            # 4) Gemini calorie guess
+            desc = (
+                f"這張圖片中的食物預測為「{label}」，"
+                f"其主要物體約佔整張圖片的 {ratio:.1%}。"
+                "請依據這些資訊推測出可能熱量與營養素組成，簡單回應即可。"
+            )
+            gemini_resp = gmodel.generate_content(desc).text
+            m = re.search(r"(\d+)\s*(大卡|卡路里|kcal)?", gemini_resp)
+            est_cal = int(m.group(1)) if m else 0
 
-        # 4) Gemini calorie guess
-        desc = (
-            f"這張圖片中的食物預測為「{label}」，"
-            f"其主要物體約佔整張圖片的 {ratio:.1%}。"
-            "請依據這些資訊推測出可能熱量與營養素組成，簡單回應即可。"
-        )
-        gemini_resp = gmodel.generate_content(desc).text
-        m = re.search(r"(\d+)\s*(大卡|卡路里|kcal)?", gemini_resp)
-        est_cal = int(m.group(1)) if m else 0
+            # 5) Build JSON response
+            result_data = {
+                'prediction':     label,
+                'confidence':     f"{conf:.2%}",
+                'ratio':          f"{ratio:.2%}",
+                'gemini':         gemini_resp,
+                'detections':     [{'item': label, 'calories': est_cal}],
+                'total_calories': est_cal,
+            }
+            return Response(result_data, status=status.HTTP_200_OK)
+        return JsonResponse({'error': True})
 
-        # 5) Build JSON response
-        result_data = {
-            'prediction':     label,
-            'confidence':     f"{conf:.2%}",
-            'ratio':          f"{ratio:.2%}",
-            'gemini':         gemini_resp,
-            'detections':     [{'item': label, 'calories': est_cal}],
-            'total_calories': est_cal,
-        }
-        return Response(result_data, status=status.HTTP_200_OK)

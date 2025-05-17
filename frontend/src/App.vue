@@ -5,24 +5,31 @@
       Loading…
     </div>
 
-    <header>
-      <nav class="navbar" style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="nav-links">
-          <RouterLink to="/">首頁</RouterLink>
-          <RouterLink to="/classify">上傳</RouterLink>
-        </div>
-        <div v-if="user" class="auth-links">
-          <span style="color: #e8e6e3;">歡迎，{{ user.username }}</span>
-          <button @click="logout">登出</button>
+  <header>
+    <nav class="navbar flex justify-between items-center p-4 bg-gray-800 text-white">
+      <!-- Left: Main Navigation -->
+      <div class="nav-links space-x-4">
+        <RouterLink to="/">首頁</RouterLink>
+        <RouterLink to="/features">功能介紹</RouterLink>
+        <RouterLink to="/classify">開始使用</RouterLink>
+        <RouterLink to="/help">幫助中心</RouterLink>
+        <RouterLink to="/about">關於我們</RouterLink>
+      </div>
+
+      <!-- Right: Auth Links -->
+      <div class="auth-links space-x-4">
+        <template v-if="user">
+          <span class="text-gray-300">歡迎，{{ user.username }}</span>
           <RouterLink to="/history">歷史紀錄</RouterLink>
-        </div>
-        <div v-else class="auth-links">
+          <button @click="logout" class="text-red-400 hover:underline">登出</button>
+        </template>
+        <template v-else>
           <RouterLink to="/accounts/login">登入</RouterLink>
           <RouterLink to="/accounts/signup">註冊</RouterLink>
-        </div>
-      </nav>
-    </header>
-
+        </template>
+      </div>
+    </nav>
+  </header>
     <!-- flash messages -->
     <transition-group name="fade" tag="div">
       <div v-for="msg in messages" :key="msg" class="messages">
