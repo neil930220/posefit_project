@@ -19,6 +19,12 @@ window.fetch = async (input, init = {}) => {
   return res
 }
 
+// On app load
+const token = localStorage.getItem('access_token')
+if (token) {
+  axios.defaults.headers.common.Authorization = `Bearer ${token}`
+}
+
 // 0️⃣ — Axios JWT setup
 //   • If you already logged in, grab the token and set it globally
 const initialToken = localStorage.getItem('access_token')

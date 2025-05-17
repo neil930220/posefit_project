@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from .views import UploadAndAnalyze
 
 urlpatterns = [
-    path('', views.upload_image, name='classify'),
+    path('api/upload/', UploadAndAnalyze.as_view(), name='api_upload_analyze'),
 ]

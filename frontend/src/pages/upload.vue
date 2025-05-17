@@ -99,14 +99,16 @@ async function onSubmit() {
   result.value  = null
 
   try {
+    const token = localStorage.getItem('access_token')
     const form = new FormData()
     form.append('image', file.value)
-    const { data } = await axios.post('/upload/', form, {
+    const { data } = await axios.post('api/upload/', form, {
       headers: {
-        'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1]
+        Authorization: `Bearer ${token}`,
       },
       withCredentials: true
     })
+    console.log(data)
     if (data.error) {
       error.value  = data
     }else{

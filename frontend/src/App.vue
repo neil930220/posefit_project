@@ -45,6 +45,7 @@
 import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchUser, fetchMessages, doLogout } from './services/api'
+import "../../static/css/style.css"
 
 // injected loading flag
 const loadingApp = inject('loadingApp')
