@@ -13,6 +13,10 @@
     <button :disabled="loading" class="btn btn-success">
       {{ loading ? '登入中…' : '登入' }}
     </button>
+        <!-- Forgot password link -->
+    <div class="mt-2">
+      <router-link to="/forgot-password">忘記密碼？</router-link>
+    </div>
     <div v-if="nonFieldError" class="text-danger mt-2">{{ nonFieldError }}</div>
   </form>
 </template>

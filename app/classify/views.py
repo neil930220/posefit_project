@@ -102,33 +102,37 @@ def analyzing_page(request):
     image_area = arr.shape[0] * arr.shape[1]
     ratio = food_area / image_area
 
-    # 3) Gemini prompt & response
-    desc = (
-        f"這張圖片中的食物預測為「{label}」，"
-        f"其主要物體約佔整張圖片的 {ratio:.1%}。"
-        "請依據這些資訊推測出可能熱量與營養素組成，簡單回應即可。"
-    )
-    gemini_resp = gmodel.generate_content(desc).text
+    if conf > 90 :     
+        # 3) Gemini prompt & response
+        desc = (
+            f"這張圖片中的食物預測為「{label}」，"
+            f"其主要物體約佔整張圖片的 {ratio:.1%}。"
+            "請依據這些資訊推測出可能熱量與營養素組成，簡單回應即可。"
+        )
+        gemini_resp = gmodel.generate_content(desc).text
 
-    # 4) Parse calories
-    m = re.search(r"(\d+)\s*(大卡|卡路里|kcal)?", gemini_resp)
-    est_cal = int(m.group(1)) if m else 0
+        # 4) Parse calories
+        m = re.search(r"(\d+)\s*(大卡|卡路里|kcal)?", gemini_resp)
+        est_cal = int(m.group(1)) if m else 0
+        
+        # 5) Build payload
+        detections = [{"item": label, "calories": est_cal}]
 
-    # 5) Build payload
-    detections = [{"item": label, "calories": est_cal}]
-    result_data = {
-        'file_url':        file_url,
-        'prediction':      label,
-        'confidence':      f"{conf:.2%}",
-        'ratio':           f"{ratio:.2%}",
-        'gemini':          gemini_resp,
-        'detections': detections,
-        'total_calories':  est_cal,
-    }
-    # stash for result view
-    request.session['result_data'] = result_data
+        result_data = {
+            'file_url':        file_url,
+            'prediction':      label,
+            'confidence':      f"{conf:.2%}",
+            'ratio':           f"{ratio:.2%}",
+            'gemini':          gemini_resp,
+            'detections': detections,
+            'total_calories':  est_cal,
+        }
 
-    return JsonResponse(result_data)
+        request.session['result_data'] = result_data
+
+        return JsonResponse(result_data)
+
+    return JsonResponse({'error': True})
 
 
 

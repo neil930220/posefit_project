@@ -15,9 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf import settings
+from django.views.generic import TemplateView
 from django.contrib import admin
 from django.conf.urls.static import static
-from django.urls import include, path
+from django.urls import include, path,re_path
 from app.history.views import HistoryPageView
 from app.classify.views import upload_image, analyzing_page
 from rest_framework_simplejwt.views import (
@@ -41,6 +42,8 @@ urlpatterns = [
     # optional extra endpoints
     path('api/token/verify/',       TokenVerifyView.as_view(),      name='token_verify'),
     path('api/token/blacklist/',    TokenBlacklistView.as_view(),   name='token_blacklist'),
+    path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    re_path(r'^.*$', TemplateView.as_view(template_name="index.html")),
 ]
 
 if settings.DEBUG:

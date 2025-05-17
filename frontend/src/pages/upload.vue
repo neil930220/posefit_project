@@ -47,6 +47,9 @@
         <p v-text="result.gemini" />
         <p>總熱量：<span v-text="result.total_calories" /> 大卡</p>
     </div>
+    <div v-if="error" class="result">
+      <h3>無法辨識請重新拍攝</h3>
+    </div>
   </div>
 </template>
   
@@ -60,6 +63,7 @@ const loading     = ref(false)
 const result      = ref(null)
 const isDragging  = ref(false)
 const imageInput  = ref(null)
+const error      = ref(null)
 
 function onDragOver() {
   isDragging.value = true
@@ -103,8 +107,12 @@ async function onSubmit() {
       },
       withCredentials: true
     })
-    result.value  = data
-    await saveHistory()
+    if (data.error) {
+      error.value  = data
+    }else{
+      result.value  = data
+      await saveHistory()
+    }
   } catch {
     alert('分析失敗，請稍後再試')
   } finally {
