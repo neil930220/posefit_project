@@ -97,6 +97,7 @@ async function onSubmit() {
   if (!file.value) return
   loading.value = true
   result.value  = null
+  error.value      = null
 
   try {
     const token = localStorage.getItem('access_token')
@@ -152,6 +153,7 @@ function reset() {
   previewUrl.value = null
   result.value     = null
   loading.value    = false
+  error.value      = null
   imageInput.value.value = ''
 }
 </script>

@@ -75,7 +75,8 @@ class UploadAndAnalyze(APIView):
         food_area  = max((cv2.contourArea(c) for c in ctrs), default=0)
         image_area = arr.shape[0] * arr.shape[1]
         ratio      = food_area / image_area
-        if conf > 90 :     
+        print(conf)
+        if conf > 0.90 :     
             # 4) Gemini calorie guess
             desc = (
                 f"這張圖片中的食物預測為「{label}」，"

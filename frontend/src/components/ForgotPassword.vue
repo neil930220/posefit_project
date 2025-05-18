@@ -30,7 +30,7 @@ export default {
       this.loading = true
       this.success = this.error = ''
       try {
-        await axios.post('/api/password_reset/', { email: this.email })
+        await axios.post('/api/password_reset', { email: this.email })
         this.success = true
       } catch (err) {
         if (err.response?.status === 400) {

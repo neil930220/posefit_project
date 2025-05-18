@@ -11,7 +11,7 @@
       <div class="nav-links space-x-4">
         <RouterLink to="/">首頁</RouterLink>
         <RouterLink to="/features">功能介紹</RouterLink>
-        <RouterLink to="/classify">開始使用</RouterLink>
+        <RouterLink to="/start">開始使用</RouterLink>
         <RouterLink to="/help">幫助中心</RouterLink>
         <RouterLink to="/about">關於我們</RouterLink>
       </div>
@@ -52,7 +52,7 @@
 import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchUser, fetchMessages, doLogout } from './services/api'
-import "../../static/css/style.css"
+import "./assets/style.css"
 
 // injected loading flag
 const loadingApp = inject('loadingApp')

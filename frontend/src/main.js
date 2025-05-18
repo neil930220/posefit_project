@@ -52,12 +52,15 @@ app.provide('loadingApp', loadingApp)
 // 3️⃣ — Router guards to simulate a “page load”
 router.beforeEach((to, from, next) => {
   loadingApp.value = true
-  setTimeout(() => next(), 300)
+  const delay = Math.floor(Math.random() * 300) + 200 // random between 200–500ms
+  setTimeout(() => next(), delay)
 })
+
 router.afterEach(() => {
+  const delay = Math.floor(Math.random() * 300) + 200 // random between 200–500ms
   setTimeout(() => {
     loadingApp.value = false
-  }, 300)
+  }, delay)
 })
 
 // 4️⃣ — Register global components

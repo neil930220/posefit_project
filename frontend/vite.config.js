@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'   // or react(), etc.
 import { resolve } from 'path'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   base: '',
@@ -21,5 +22,5 @@ export default defineConfig({
       '/upload': 'http://localhost:8000',     
     }
   },
-  plugins: [vue()],
+  plugins: [vue(),tailwindcss(),],
 })

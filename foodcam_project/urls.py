@@ -26,11 +26,24 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,         # optional: verify a token
     TokenBlacklistView,      # optional: blacklist a refresh token
 )
+from django.http import FileResponse
+import os
+from django.views.generic import View
+from django_rest_passwordreset.views import (
+    ResetPasswordRequestToken,
+    ResetPasswordConfirm,
+    ResetPasswordValidateToken
+)
+from django.views.decorators.csrf import csrf_exempt
+
+class FrontendAppView(View):
+    def get(self, request):
+        file_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'index.html')
+        return FileResponse(open(file_path, 'rb'))
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('app.classify.urls')),
-    path('classify/', include('app.classify.urls')),
     path('accounts/', include('app.accounts.urls')),
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("app.history.urls")),
@@ -39,17 +52,17 @@ urlpatterns = [
     # optional extra endpoints
     path('api/token/verify/',       TokenVerifyView.as_view(),      name='token_verify'),
     path('api/token/blacklist/',    TokenBlacklistView.as_view(),   name='token_blacklist'),
-    path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path('api/password_reset',csrf_exempt(ResetPasswordRequestToken.as_view()),name='password_reset'),
+    path('api/password_reset/validate_token',csrf_exempt(ResetPasswordValidateToken.as_view()),name='password_reset_validate_token'),
+    path('api/password_reset/confirm',csrf_exempt(ResetPasswordConfirm.as_view()),name='password_reset_confirm'),
 ]
 
 if settings.DEBUG:
     # 1) Serve /media/ from disk
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# 2) Finally, your SPA entrypoint (catch-all)
 #    This must come *after* static(). Otherwise it intercepts /media/ too.
 urlpatterns += [
-    # re_path catches everything else and sends index.html
-    re_path(r'^.*$', TemplateView.as_view(template_name='index.html')),
+    re_path(r'^.*$', FrontendAppView.as_view()),
 ]
 

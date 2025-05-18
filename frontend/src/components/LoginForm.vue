@@ -2,12 +2,12 @@
   <form @submit.prevent="onSubmit" novalidate>
     <div class="mb-3">
       <label class="form-label">使用者名稱</label>
-      <input v-model="form.username" type="text" class="form-control" />
+      <input v-model="form.username" type="text" class="form-control bg-white text-black border border-gray-300 p-2 rounded w-full" />
       <div v-if="errors.username" class="text-danger">{{ errors.username[0] }}</div>
     </div>
     <div class="mb-3">
       <label class="form-label">密碼</label>
-      <input v-model="form.password" type="password" class="form-control" />
+      <input v-model="form.password" type="password" class="form-control bg-white text-black border border-gray-300 p-2 rounded w-full" />
       <div v-if="errors.password" class="text-danger">{{ errors.password[0] }}</div>
     </div>
     <button :disabled="loading" class="btn btn-success">
