@@ -23,6 +23,7 @@
 
 <script>
 import axios from 'axios';
+import api from '../services/api';
 
 export default {
   name: 'LoginForm',
@@ -42,7 +43,7 @@ export default {
 
       try {
         // 1. POST JSON to token endpoint
-        const { data } = await axios.post('/api/token/', {
+        const { data } = await api.post('/api/token/', {
           username: this.form.username,
           password: this.form.password
         });

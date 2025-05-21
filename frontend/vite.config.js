@@ -4,13 +4,13 @@ import { resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '',
+  base: './',
   build: {
     manifest: true,
-    outDir: resolve(__dirname, '../assets'),  // match STATICFILES_DIRS below
+    outDir: resolve(__dirname, 'dist'),
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/main.js'),  // adjust to your entrypoint
+        main: resolve('./index.html'),
       }
     }
   },

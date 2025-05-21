@@ -45,7 +45,8 @@
   
   <script>
   import axios from 'axios';
-  
+  import api from '../services/api';
+
   export default {
     name: 'SignupForm',
     data() {
@@ -73,7 +74,7 @@
         this.errors = {};
         this.nonFieldError = '';
         try {
-          await axios.post('/accounts/signup/', this.form, {
+          await api.post('/accounts/signup/', this.form, {
             headers: { 
               'X-CSRFToken': this.getCSRFToken(),
               'X-Requested-With': 'XMLHttpRequest',

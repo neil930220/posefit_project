@@ -38,6 +38,7 @@
 
 <script>
 import axios from 'axios'
+import api from '../services/api';
 export default {
   props: ['uid', 'token'],
   data() {
@@ -76,7 +77,7 @@ export default {
 
       // ─── Server call ────────────────────────────────────
       try {
-        await axios.post('/api/password_reset/confirm', {
+        await api.post('/api/password_reset/confirm', {
           uid: this.uid,
           token: this.token,
           password: this.newPassword

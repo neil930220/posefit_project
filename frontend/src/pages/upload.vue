@@ -56,6 +56,7 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import api from '../services/api';
 
 const file        = ref(null)
 const previewUrl  = ref(null)
@@ -103,7 +104,7 @@ async function onSubmit() {
     const token = localStorage.getItem('access_token')
     const form = new FormData()
     form.append('image', file.value)
-    const { data } = await axios.post('api/upload/', form, {
+    const { data } = await api.post('api/upload/', form, {
       headers: {
           Authorization: `Bearer ${token}`,
       },

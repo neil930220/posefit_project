@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">posefit</string>
+    <string name="title_activity_main">posefit</string>
+    <string name="package_name">com.showcase.posefit</string>
+    <string name="custom_url_scheme">com.showcase.posefit</string>
+</resources>

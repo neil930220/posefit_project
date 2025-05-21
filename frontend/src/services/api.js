@@ -1,6 +1,15 @@
 // frontend/src/services/api.js
 
 // helper: grab access token & build headers
+
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL
+});
+
+export default api;
+
 function authHeaders() {
   const token = localStorage.getItem('access_token');
   return {
