@@ -1,40 +1,58 @@
 <template>
-  <form @submit.prevent="onSubmit" novalidate>
-    <div class="mb-3">
-      <label class="form-label">新密碼</label>
-      <input
-        v-model="newPassword"
-        type="password"
-        class="form-control"
-        :class="{ 'is-invalid': fieldError('new') }"
-      />
-      <div v-if="fieldError('new')" class="text-danger">
-        {{ fieldError('new') }}
+  <section class="max-w-md mx-auto px-6 py-12">
+    <h2 class="text-2xl font-semibold text-center mb-6">重設密碼</h2>
+
+    <form @submit.prevent="onSubmit" novalidate class="space-y-6">
+      <!-- 新密碼 -->
+      <div>
+        <label class="block text-gray-700 mb-1">新密碼 *</label>
+        <input
+          v-model="newPassword"
+          type="password"
+          placeholder="輸入新密碼"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2 transition"
+          :class="{
+            'border-red-500 focus:border-red-500': fieldError('new')
+          }"
+        />
+        <p v-if="fieldError('new')" class="text-red-500 text-sm mt-1">
+          {{ fieldError('new') }}
+        </p>
       </div>
-    </div>
 
-    <div class="mb-3">
-      <label class="form-label">確認新密碼</label>
-      <input
-        v-model="reNewPassword"
-        type="password"
-        class="form-control"
-        :class="{ 'is-invalid': fieldError('re') }"
-      />
-      <div v-if="fieldError('re')" class="text-danger">
-        {{ fieldError('re') }}
+      <!-- 確認新密碼 -->
+      <div>
+        <label class="block text-gray-700 mb-1">確認新密碼 *</label>
+        <input
+          v-model="reNewPassword"
+          type="password"
+          placeholder="再次輸入新密碼"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2 transition"
+          :class="{
+            'border-red-500 focus:border-red-500': fieldError('re')
+          }"
+        />
+        <p v-if="fieldError('re')" class="text-red-500 text-sm mt-1">
+          {{ fieldError('re') }}
+        </p>
       </div>
-    </div>
 
-    <button :disabled="loading" class="btn btn-primary">
-      {{ loading ? '重設中…' : '重設密碼' }}
-    </button>
+      <!-- Submit -->
+      <button
+        :disabled="loading"
+        class="w-full bg-gray-800 text-white py-3 rounded-md font-medium hover:bg-black transition disabled:opacity-50"
+      >
+        {{ loading ? '重設中…' : '重設密碼' }}
+      </button>
 
-    <div v-if="nonFieldError" class="text-danger mt-2">
-      {{ nonFieldError }}
-    </div>
-  </form>
+      <!-- Non-field error -->
+      <p v-if="nonFieldError" class="text-red-500 text-center text-sm mt-4">
+        {{ nonFieldError }}
+      </p>
+    </form>
+  </section>
 </template>
+
 
 <script>
 import axios from 'axios'

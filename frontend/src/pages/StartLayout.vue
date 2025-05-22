@@ -1,18 +1,40 @@
 <template>
-  <div class="p-4">
-    <h1 class="text-2xl font-bold mb-4">開始使用 Start</h1>
-    <div class="space-y-4">
-      <RouterLink to="/classify" class="block p-4 bg-blue-100 hover:bg-blue-200 rounded shadow">
-        食物辨識 Food Recognition →
-      </RouterLink>
-      <RouterLink to="/start/posture" class="block p-4 bg-green-100 hover:bg-green-200 rounded shadow">
-        姿勢訓練 Posture Training →
-      </RouterLink>
-    </div>
+  <div class="flex flex-col">
+    <!-- 食物辨識 Panel -->
+    <RouterLink
+      to="/classify"
+      class="block h-96 lg:h-screen bg-blue-500 hover:bg-blue-600 transition-colors
+             flex flex-col items-center justify-center text-center cursor-pointer"
+    >
+      <h2 class="text-5xl font-bold text-white drop-shadow-md">食物辨識</h2>
+      <button class="mt-6 px-8 py-2 bg-white text-gray-800 rounded-lg font-medium">
+        Start
+      </button>
+    </RouterLink>
 
-    <!-- Nested route render here -->
-    <div class="mt-6">
-      <RouterView />
-    </div>
+    <!-- 姿勢訓練 Panel -->
+    <RouterLink
+      to="/start/posture"
+      class="block h-96 lg:h-screen bg-green-500 hover:bg-green-600 transition-colors
+             flex flex-col items-center justify-center text-center cursor-pointer"
+    >
+      <h2 class="text-5xl font-bold text-white drop-shadow-md">姿勢訓練</h2>
+      <button class="mt-6 px-8 py-2 bg-white text-gray-800 rounded-lg font-medium">
+        Start
+      </button>
+    </RouterLink>
   </div>
 </template>
+
+<script setup>
+// no extra logic needed here
+</script>
+
+<style>
+/* if you want a thin divider line between them on desktop */
+@media (min-width: 1024px) {
+  .flex-col > a:first-child {
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+}
+</style>

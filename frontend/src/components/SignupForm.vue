@@ -1,47 +1,107 @@
 <template>
-    <form @submit.prevent="onSubmit" novalidate>
-      <div class="mb-3">
-        <label class="form-label">使用者名稱</label>
-        <input v-model="form.username" type="text" class="form-control" />
-        <div v-if="errors.username" class="text-danger">{{ errors.username[0] }}</div>
+  <section class="max-w-md mx-auto px-6 py-12 shadow-lg">
+    <!-- Heading + subtitle -->
+    <h1 class="text-3xl font-semibold text-center mb-2">會員註冊</h1>
+    <!-- Form -->
+    <form @submit.prevent="onSubmit" novalidate class="space-y-6">
+      <!-- Full Name -->
+      <div>
+        <label class="block text-gray-700 mb-1">全名 *</label>
+        <input
+          v-model="form.username"
+          type="text"
+          placeholder="輸入您的全名"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.username" class="text-red-500 text-sm mt-1">
+          {{ errors.username[0] }}
+        </p>
       </div>
-  
-      <div class="mb-3">
-        <label class="form-label">電子郵件</label>
-        <input v-model="form.email" type="email" class="form-control" />
-        <div v-if="errors.email" class="text-danger">{{ errors.email[0] }}</div>
+
+      <!-- Email -->
+      <div>
+        <label class="block text-gray-700 mb-1">電子郵件 *</label>
+        <input
+          v-model="form.email"
+          type="email"
+          placeholder="name@example.com"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.email" class="text-red-500 text-sm mt-1">
+          {{ errors.email[0] }}
+        </p>
       </div>
-  
-      <div class="mb-3">
-        <label class="form-label">電話</label>
-        <input v-model="form.phone" type="text" class="form-control" />
-        <div v-if="errors.phone" class="text-danger">{{ errors.phone[0] }}</div>
+
+      <!-- Phone -->
+      <div>
+        <label class="block text-gray-700 mb-1">電話 *</label>
+        <input
+          v-model="form.phone"
+          type="tel"
+          placeholder="0912-345-678"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.phone" class="text-red-500 text-sm mt-1">
+          {{ errors.phone[0] }}
+        </p>
       </div>
-  
-      <div class="mb-3">
-        <label class="form-label">生日</label>
-        <input v-model="form.birthday" type="date" class="form-control" />
-        <div v-if="errors.birthday" class="text-danger">{{ errors.birthday[0] }}</div>
+
+      <!-- Birthday -->
+      <div>
+        <label class="block text-gray-700 mb-1">生日 *</label>
+        <input
+          v-model="form.birthday"
+          type="date"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.birthday" class="text-red-500 text-sm mt-1">
+          {{ errors.birthday[0] }}
+        </p>
       </div>
-  
-      <div class="mb-3">
-        <label class="form-label">密碼</label>
-        <input v-model="form.password1" type="password" class="form-control" />
-        <div v-if="errors.password1" class="text-danger">{{ errors.password1[0] }}</div>
+
+      <!-- Password -->
+      <div>
+        <label class="block text-gray-700 mb-1">密碼 *</label>
+        <input
+          v-model="form.password1"
+          type="password"
+          placeholder="至少 8 個字元"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.password1" class="text-red-500 text-sm mt-1">
+          {{ errors.password1[0] }}
+        </p>
       </div>
-  
-      <div class="mb-3">
-        <label class="form-label">再輸入一次密碼</label>
-        <input v-model="form.password2" type="password" class="form-control" />
-        <div v-if="errors.password2" class="text-danger">{{ errors.password2[0] }}</div>
+
+      <!-- Confirm Password -->
+      <div>
+        <label class="block text-gray-700 mb-1">再輸入一次密碼 *</label>
+        <input
+          v-model="form.password2"
+          type="password"
+          placeholder="再輸入一次密碼"
+          class="w-full border-b border-gray-300 focus:border-gray-600 outline-none py-2"
+        />
+        <p v-if="errors.password2" class="text-red-500 text-sm mt-1">
+          {{ errors.password2[0] }}
+        </p>
       </div>
-  
-      <button :disabled="loading" class="btn btn-primary">
+
+      <!-- Submit -->
+      <button
+        :disabled="loading"
+        class="w-full bg-gray-800 text-white py-3 rounded-md font-medium hover:bg-black transition disabled:opacity-50"
+      >
         {{ loading ? '註冊中…' : '註冊' }}
       </button>
-      <div v-if="nonFieldError" class="text-danger mt-2">{{ nonFieldError }}</div>
+
+      <!-- Non-field errors -->
+      <p v-if="nonFieldError" class="text-red-500 text-center text-sm">
+        {{ nonFieldError }}
+      </p>
     </form>
-  </template>
+  </section>
+</template>
   
   <script>
   import axios from 'axios';

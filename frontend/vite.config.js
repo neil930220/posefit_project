@@ -15,6 +15,8 @@ export default defineConfig({
     }
   },
   server: {
+    https: false,   // disable HTTPS
+    host: true,
     proxy: {
       '/api': 'http://localhost:8000',
       '/accounts': 'http://localhost:8000',

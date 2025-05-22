@@ -8,6 +8,9 @@ import HistoryList from './components/HistoryList.vue'
 import ForgotPassword from './components/ForgotPassword.vue'
 import ResetPassword   from './components/ResetPassword.vue'
 import StartLayout from './pages/StartLayout.vue'
+import features   from './components/features.vue'
+import help   from './components/help.vue'
+import about   from './components/about.vue'
 
 const routes = [
   { path: '/accounts/signup/',  component: SignupForm,  name: 'SignupForm'  },
@@ -18,6 +21,9 @@ const routes = [
   { path: '/reset-password/:uid/:token',name: 'ResetPassword',component: ResetPassword,props: true},
   { path: '/start',component: StartLayout,},
   { path: '/classify',component: Upload,name:'Upload'},
+  { path: '/features',component: features,name:'features'},
+  { path: '/help',component: help,name:'help'},
+  { path: '/about',component: about,name:'about'},
 ]
 
 const router = createRouter({

@@ -36,7 +36,7 @@ SECRET_KEY = 'django-insecure-cdvc)16)n1hkfk(xe@=hfrx0!673mcryw8gn91!1ey&)8m(xcq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.12.165']
 
 # settings.py
 FRONTEND_URL = 'http://localhost:5173'  # or your production URL

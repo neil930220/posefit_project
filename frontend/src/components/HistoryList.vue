@@ -1,19 +1,76 @@
 <template>
-  <h1>Your Scan History</h1>
-  <div>
-    <p v-if="loading">Loading…</p>
-    <p v-else-if="!entries.length && !error">No history yet.</p>
-    <div v-else>
-      <div v-for="e in entries" :key="e.id" class="history-entry">
-        <img :src="e.image" :alt="`Scan on ${e.created_at}`" width="180" />
-        <p><strong>Total Calories:</strong> {{ e.total_calories }}</p>
-        <p><strong>Items:</strong> {{ e.detections.map(d => d.item).join(', ') }}</p>
-        <p><em>{{ formatDate(e.created_at) }}</em></p>
+  <section class="max-w-3xl mx-auto px-6 py-12">
+    <!-- Title -->
+    <h1 class="text-3xl font-semibold text-center mb-8">我的紀錄</h1>
+
+    <!-- 1. Loading skeletons -->
+    <div v-if="loading" class="space-y-4">
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="flex items-center space-x-4 animate-pulse"
+      >
+        <div class="bg-gray-200 h-24 w-24 rounded"></div>
+        <div class="flex-1 space-y-2 py-1">
+          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
       </div>
     </div>
-    <p v-if="error" class="text-danger">login to view your history record.</p>
-  </div>
-</template>
+
+    <!-- 2. Empty state -->
+    <div
+      v-else-if="!entries.length && !error"
+      class="text-center py-16"
+    >
+      <p class="text-gray-500 mb-6">
+        你還沒有任何紀錄！開始你的第一個掃描吧。
+      </p>
+      <RouterLink
+        to="/classify"
+        class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+      >
+        立即掃描
+      </RouterLink>
+    </div>
+
+    <!-- 3. Real entries -->
+    <div v-else class="space-y-6">
+      <div
+        v-for="e in entries"
+        :key="e.id"
+        class="flex items-center space-x-4 bg-white shadow rounded-lg p-4"
+      >
+        <img
+          :src="e.image"
+          :alt="`Scan on ${formatDate(e.created_at)}`"
+          class="h-24 w-24 object-cover rounded"
+        />
+        <div class="flex-1">
+          <p>
+            <span class="font-medium">總熱量：</span>{{ e.total_calories }}
+          </p>
+          <p>
+            <span class="font-medium">項目：</span
+            >{{ e.detections.map(d => d.item).join(', ') }}
+          </p>
+          <p class="text-sm text-gray-500">
+            {{ formatDate(e.created_at) }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Error / not logged-in -->
+    <p v-if="error" class="mt-8 text-center text-red-500">
+      請
+      <RouterLink to="/accounts/login" class="underline hover:text-red-600"
+        >登入</RouterLink
+      >
+      以查看你的紀錄。
+    </p>
+  </section>
+</template> 
 
 <script setup>
 import { ref, onMounted } from 'vue'
