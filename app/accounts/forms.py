@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
+
+
 class SignUpForm(forms.ModelForm):
     password1 = forms.CharField(
         label='密碼',

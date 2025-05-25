@@ -81,19 +81,41 @@ class UploadAndAnalyze(APIView):
             desc = (
                 f"這張圖片中的食物預測為「{label}」，"
                 f"其主要物體約佔整張圖片的 {ratio:.1%}。"
-                "請依據這些資訊推測出可能熱量與營養素組成，簡單回應即可。"
+                "請依據這些資訊提供以下營養資訊，請使用以下格式回覆："
+                "熱量: [數字] 大卡\n"
+                "碳水化合物: [數字] 克\n"
+                "蛋白質: [數字] 克\n"
+                "脂肪: [數字] 克\n"
+                "維生素: [簡短描述主要維生素]\n"
+                "礦物質: [簡短描述主要礦物質]"
             )
             gemini_resp = gmodel.generate_content(desc).text
-            m = re.search(r"(\d+)\s*(大卡|卡路里|kcal)?", gemini_resp)
-            est_cal = int(m.group(1)) if m else 0
+            
+            # Parse the structured response
+            nutrition_data = {}
+            for line in gemini_resp.split('\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    nutrition_data[key.strip()] = value.strip()
 
-            # 5) Build JSON response
+            # Extract calories
+            calories_str = nutrition_data.get('熱量', '0 大卡')
+            est_cal = int(re.search(r'(\d+)', calories_str).group(1))
+
+            # Build JSON response
             result_data = {
-                'prediction':     label,
-                'confidence':     f"{conf:.2%}",
-                'ratio':          f"{ratio:.2%}",
-                'gemini':         gemini_resp,
-                'detections':     [{'item': label, 'calories': est_cal}],
+                'prediction': label,
+                'confidence': f"{conf:.2%}",
+                'ratio': f"{ratio:.2%}",
+                'gemini': gemini_resp,
+                'nutrition': {
+                    'calories': est_cal,
+                    'carbs': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('碳水化合物', '0')).group(1)),
+                    'protein': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('蛋白質', '0')).group(1)),
+                    'fat': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('脂肪', '0')).group(1)),
+                    'vitamins': nutrition_data.get('維生素', ''),
+                    'minerals': nutrition_data.get('礦物質', '')
+                },
                 'total_calories': est_cal,
             }
             return Response(result_data, status=status.HTTP_200_OK)
