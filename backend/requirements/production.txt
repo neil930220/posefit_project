@@ -1,0 +1,21 @@
+# Include base requirements
+-r base.txt
+
+# Production server
+gunicorn==23.0.0
+whitenoise==6.8.2
+
+# Monitoring and logging
+sentry-sdk[django]
+django-health-check
+
+# Performance
+redis==5.2.0
+django-redis==5.4.0
+
+# Security
+django-security==0.21.0
+
+# File storage (if using cloud storage)
+# boto3==1.35.0
+# django-storages==1.14.4 

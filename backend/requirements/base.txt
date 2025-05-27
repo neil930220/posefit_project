@@ -1,0 +1,30 @@
+# Core Django dependencies
+Django==5.2
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+django-cors-headers==4.7.0
+django-filter==25.1
+django-extensions==4.1
+django-vite==3.1.0
+django-rest-passwordreset==1.5.0
+django-ratelimit==4.1.0
+
+# Database
+mysqlclient==2.2.7
+
+# Environment management
+python-dotenv==1.1.0
+
+# Machine Learning
+torch
+torchvision
+Pillow==10.3.0
+opencv-python==4.10.0.84
+numpy==2.0.2
+
+# AI/ML APIs
+google-generativeai==0.8.5
+
+# Utilities
+python-dateutil==2.9.0.post0
+pytz==2024.2 

@@ -2,9 +2,12 @@
 import { createApp, ref } from 'vue'
 import axios from 'axios'
 import App from './App.vue'
-import router from './router'
-import CombinedAuth from './components/CombinedAuth.vue'
-import HistoryList  from './components/HistoryList.vue'
+import router from './router.js'
+import CombinedAuth from './components/auth/CombinedAuth.vue'
+import HistoryList from './components/features/HistoryList.vue'
+
+// Add loading state for initial page load
+const initialLoading = ref(true)
 
 const _fetch = window.fetch.bind(window)
 window.fetch = async (input, init = {}) => {
@@ -45,11 +48,20 @@ axios.interceptors.request.use(config => {
 // 1️⃣ — Create Vue app
 const app = createApp(App)
 
-// 2️⃣ — Provide a global loading flag for your fake-loading overlay
+// 2️⃣ — Provide global loading flags
 const loadingApp = ref(false)
 app.provide('loadingApp', loadingApp)
+app.provide('initialLoading', initialLoading)
 
-// 3️⃣ — Router guards to simulate a “page load”
+// Handle initial page load
+window.addEventListener('load', () => {
+  const delay = Math.floor(Math.random() * 300) + 200 // random between 200–500ms
+  setTimeout(() => {
+    initialLoading.value = false
+  }, delay)
+})
+
+// 3️⃣ — Router guards to simulate a "page load"
 router.beforeEach((to, from, next) => {
   loadingApp.value = true
   const delay = Math.floor(Math.random() * 300) + 200 // random between 200–500ms

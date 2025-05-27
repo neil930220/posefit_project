@@ -1,16 +1,16 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import Upload from './pages/upload.vue'
-import SignupForm from './components/SignupForm.vue'
-import LoginForm from './components/LoginForm.vue'
+import SignupForm from './components/auth/SignupForm.vue'
+import LoginForm from './components/auth/LoginForm.vue'
 import Home    from './pages/Home.vue'
-import HistoryList from './components/HistoryList.vue'
-import ForgotPassword from './components/ForgotPassword.vue'
-import ResetPassword   from './components/ResetPassword.vue'
+import HistoryList from './components/features/HistoryList.vue'
+import ForgotPassword from './components/auth/ForgotPassword.vue'
+import ResetPassword   from './components/auth/ResetPassword.vue'
 import StartLayout from './pages/StartLayout.vue'
-import features   from './components/features.vue'
-import help   from './components/help.vue'
-import about   from './components/about.vue'
+import features   from './components/pages/features.vue'
+import help   from './components/pages/help.vue'
+import about   from './components/pages/about.vue'
 
 const routes = [
   { path: '/accounts/signup/',  component: SignupForm,  name: 'SignupForm'  },

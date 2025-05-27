@@ -1,0 +1,27 @@
+# Include base requirements
+-r base.txt
+
+# Development tools
+ipython==8.35.0
+jupyter==1.1.1
+jupyterlab==4.3.6
+
+# Testing
+pytest
+pytest-django
+pytest-cov
+factory-boy
+
+# Code quality
+black
+flake8
+isort
+mypy
+
+# Debugging
+django-debug-toolbar
+django-extensions
+
+# Documentation
+Sphinx
+sphinx-rtd-theme 
