@@ -50,6 +50,12 @@
           >開始使用</RouterLink>
 
           <RouterLink
+            to="/nutrition"
+            class="hover:text-gray-200"
+            active-class="underline"
+          >營養管理</RouterLink>
+
+          <RouterLink
             to="/history"
             class="hover:text-gray-200"
             active-class="underline"

@@ -11,6 +11,7 @@ import StartLayout from './pages/StartLayout.vue'
 import features   from './components/pages/features.vue'
 import help   from './components/pages/help.vue'
 import about   from './components/pages/about.vue'
+import NutritionDashboard from './pages/NutritionDashboard.vue'
 
 const routes = [
   { path: '/accounts/signup/',  component: SignupForm,  name: 'SignupForm'  },
@@ -24,6 +25,7 @@ const routes = [
   { path: '/features',component: features,name:'features'},
   { path: '/help',component: help,name:'help'},
   { path: '/about',component: about,name:'about'},
+  { path: '/nutrition', component: NutritionDashboard, name: 'NutritionDashboard' },
 ]
 
 const router = createRouter({
