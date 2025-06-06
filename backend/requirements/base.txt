@@ -18,7 +18,7 @@ python-dotenv==1.1.0
 # Machine Learning
 torch
 torchvision
-Pillow==10.3.0
+Pillow
 opencv-python==4.10.0.84
 numpy==2.0.2
 
