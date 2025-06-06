@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <!-- Chart Container -->
     <div v-if="hasData" class="relative">
-      <canvas ref="chartCanvas" width="400" height="200"></canvas>
+      <canvas ref="chartRef" width="400" height="200"></canvas>
     </div>
     
     <!-- No Data Message -->
@@ -41,22 +41,36 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, computed, nextTick } from 'vue'
-import { Chart, registerables } from 'chart.js'
-
-Chart.register(...registerables)
+import { ref, onMounted, computed, watch } from 'vue'
+import Chart from 'chart.js/auto'
 
 export default {
   name: 'WeightChart',
   props: {
     analyticsData: {
       type: Object,
-      default: () => ({})
+      required: true,
+      default: () => ({
+        analytics: {
+          current_weight: null,
+          starting_weight: null,
+          weight_change: 0,
+          total_records: 0
+        },
+        chart_data: {
+          dates: [],
+          weight: [],
+          bmr: [],
+          tdee: []
+        },
+        goal_progress: null,
+        date_range: '30d'
+      })
     }
   },
   setup(props) {
-    const chartCanvas = ref(null)
-    const chart = ref(null)
+    const chartRef = ref(null)
+    let chart = null
 
     const hasData = computed(() => {
       return props.analyticsData?.chart_data?.dates?.length > 0
@@ -64,6 +78,10 @@ export default {
 
     const weightChange = computed(() => {
       return props.analyticsData?.analytics?.weight_change || 0
+    })
+
+    const totalRecords = computed(() => {
+      return props.analyticsData?.analytics?.total_records || 0
     })
 
     const weightChangeDisplay = computed(() => {
@@ -87,65 +105,67 @@ export default {
       return 'text-gray-900'
     })
 
-    const createChart = () => {
-      if (!chartCanvas.value || !hasData.value) return
+    const initChart = () => {
+      if (!chartRef.value) return
 
-      const ctx = chartCanvas.value.getContext('2d')
-      const chartData = props.analyticsData.chart_data
-
-      // Destroy existing chart
-      if (chart.value) {
-        chart.value.destroy()
+      const ctx = chartRef.value.getContext('2d')
+      
+      // Destroy existing chart if it exists
+      if (chart) {
+        chart.destroy()
       }
 
-      chart.value = new Chart(ctx, {
+      if (!hasData.value) {
+        // Create empty chart with message
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: [],
+            datasets: []
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'No weight data available'
+              }
+            }
+          }
+        })
+        return
+      }
+
+      const { dates, weight, bmr, tdee } = props.analyticsData.chart_data
+
+      chart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: chartData.dates,
+          labels: dates,
           datasets: [
             {
-              label: '體重 (kg)',
-              data: chartData.weight,
-              borderColor: '#3B82F6',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.4,
-              pointBackgroundColor: '#3B82F6',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              label: 'Weight (kg)',
+              data: weight,
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1,
+              yAxisID: 'y'
             },
             {
               label: 'BMR (kcal)',
-              data: chartData.bmr,
-              borderColor: '#10B981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              borderWidth: 2,
-              fill: false,
-              tension: 0.4,
-              pointBackgroundColor: '#10B981',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-              yAxisID: 'y1'
+              data: bmr,
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1,
+              yAxisID: 'y1',
+              hidden: true
             },
             {
               label: 'TDEE (kcal)',
-              data: chartData.tdee,
-              borderColor: '#8B5CF6',
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
-              borderWidth: 2,
-              fill: false,
-              tension: 0.4,
-              pointBackgroundColor: '#8B5CF6',
-              pointBorderColor: '#ffffff',
-              pointBorderWidth: 2,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-              yAxisID: 'y1'
+              data: tdee,
+              borderColor: 'rgb(54, 162, 235)',
+              tension: 0.1,
+              yAxisID: 'y1',
+              hidden: true
             }
           ]
         },
@@ -154,62 +174,16 @@ export default {
           maintainAspectRatio: false,
           interaction: {
             mode: 'index',
-            intersect: false,
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: '體重與代謝率變化趨勢',
-              font: {
-                size: 16,
-                weight: 'bold'
-              }
-            },
-            legend: {
-              position: 'top',
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              callbacks: {
-                label: function(context) {
-                  let label = context.dataset.label || ''
-                  if (label) {
-                    label += ': '
-                  }
-                  if (context.parsed.y !== null) {
-                    if (label.includes('kg')) {
-                      label += context.parsed.y + ' kg'
-                    } else {
-                      label += context.parsed.y + ' kcal'
-                    }
-                  }
-                  return label
-                }
-              }
-            }
+            intersect: false
           },
           scales: {
-            x: {
-              display: true,
-              title: {
-                display: true,
-                text: '日期'
-              },
-              grid: {
-                display: false
-              }
-            },
             y: {
               type: 'linear',
               display: true,
               position: 'left',
               title: {
                 display: true,
-                text: '體重 (kg)'
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.1)'
+                text: 'Weight (kg)'
               }
             },
             y1: {
@@ -218,16 +192,27 @@ export default {
               position: 'right',
               title: {
                 display: true,
-                text: '熱量 (kcal)'
+                text: 'Calories'
               },
               grid: {
-                drawOnChartArea: false,
-              },
-            },
+                drawOnChartArea: false
+              }
+            }
           },
-          elements: {
-            point: {
-              hoverRadius: 8
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || ''
+                  if (label) {
+                    label += ': '
+                  }
+                  if (context.parsed.y !== null) {
+                    label += context.parsed.y.toFixed(2)
+                  }
+                  return label
+                }
+              }
             }
           }
         }
@@ -235,21 +220,18 @@ export default {
     }
 
     watch(() => props.analyticsData, () => {
-      nextTick(() => {
-        createChart()
-      })
+      initChart()
     }, { deep: true })
 
     onMounted(() => {
-      nextTick(() => {
-        createChart()
-      })
+      initChart()
     })
 
     return {
-      chartCanvas,
+      chartRef,
       hasData,
       weightChange,
+      totalRecords,
       weightChangeDisplay,
       weightChangeClass,
       weightChangeTextClass

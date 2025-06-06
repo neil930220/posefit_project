@@ -183,6 +183,7 @@ export default {
     const showWeightModal = ref(false)
     const showGoalModal = ref(false)
     const loading = ref(false)
+    const error = ref(null)
 
     const hasProfile = computed(() => {
       return dashboardData.value?.profile?.age
@@ -191,10 +192,12 @@ export default {
     const loadDashboard = async () => {
       try {
         loading.value = true
+        error.value = null
         const data = await nutritionService.getDashboardSummary()
         dashboardData.value = data
-      } catch (error) {
-        console.error('Error loading dashboard:', error)
+      } catch (err) {
+        console.error('Error loading dashboard:', err)
+        error.value = err.response?.data?.message || 'Failed to load dashboard data'
       } finally {
         loading.value = false
       }
@@ -202,10 +205,12 @@ export default {
 
     const loadAnalytics = async () => {
       try {
+        error.value = null
         const data = await nutritionService.getWeightAnalytics(selectedTimeRange.value)
         analyticsData.value = data
-      } catch (error) {
-        console.error('Error loading analytics:', error)
+      } catch (err) {
+        console.error('Error loading analytics:', err)
+        error.value = err.response?.data?.message || 'Failed to load analytics data'
       }
     }
 
@@ -245,6 +250,7 @@ export default {
       showGoalModal,
       hasProfile,
       loading,
+      error,
       loadDashboard,
       loadAnalytics,
       handleBMRCalculated,

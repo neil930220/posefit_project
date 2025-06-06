@@ -31,7 +31,7 @@
             <p v-if="errors.username" class="text-red-500 text-sm mt-1">{{ errors.username[0] }}</p>
           </div>
 
-          <div class="mb-6">
+          <div class="mb-4">
             <label class="block text-gray-700 mb-1" for="password">密碼 *</label>
             <input
               id="password"
@@ -40,6 +40,18 @@
               class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"
             />
             <p v-if="errors.password" class="text-red-500 text-sm mt-1">{{ errors.password[0] }}</p>
+          </div>
+
+          <!-- Keep Login Checkbox -->
+          <div class="mb-6">
+            <label class="flex items-center">
+              <input
+                v-model="form.keepLogin"
+                type="checkbox"
+                class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span class="text-gray-700 text-sm">保持登入狀態（30天）</span>
+            </label>
           </div>
 
           <button
@@ -68,12 +80,17 @@
 <script>
 import axios from 'axios';
 import api from '../../services/api';
+import { cookieStorage } from '../../utils/cookies';
 
 export default {
   name: 'LoginForm',
   data() {
     return {
-      form: { username: '', password: '' },
+      form: { 
+        username: '', 
+        password: '',
+        keepLogin: false
+      },
       errors: {},
       nonFieldError: '',
       loading: false,
@@ -94,12 +111,13 @@ export default {
 
         console.log(data)
 
-        // 2. Save tokens
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
+        // 2. Save tokens to cookies instead of localStorage
+        cookieStorage.setItem('access_token', data.access, this.form.keepLogin);
+        cookieStorage.setItem('refresh_token', data.refresh, this.form.keepLogin);
 
         // 3. Set default Authorization header
         axios.defaults.headers.common.Authorization = `Bearer ${data.access}`;
+        
         // 4. Redirect home
         window.location.href = '/';
       }
@@ -126,8 +144,8 @@ export default {
     }
   },
   mounted() {
-    // If you already have a token in storage, attach it
-    const token = localStorage.getItem('access_token');
+    // If you already have a token in cookies, attach it
+    const token = cookieStorage.getItem('access_token');
     if (token) {
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
     }

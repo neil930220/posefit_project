@@ -5,13 +5,14 @@ import App from './App.vue'
 import router from './router.js'
 import CombinedAuth from './components/auth/CombinedAuth.vue'
 import HistoryList from './components/features/HistoryList.vue'
+import { cookieStorage } from './utils/cookies'
 
 // Add loading state for initial page load
 const initialLoading = ref(true)
 
 const _fetch = window.fetch.bind(window)
 window.fetch = async (input, init = {}) => {
-  const token = localStorage.getItem('access_token')
+  const token = cookieStorage.getItem('access_token')
   init.headers = {
     'Content-Type': 'application/json',
     ...(init.headers || {}),
@@ -23,27 +24,26 @@ window.fetch = async (input, init = {}) => {
 }
 
 // On app load
-const token = localStorage.getItem('access_token')
+const token = cookieStorage.getItem('access_token')
 if (token) {
   axios.defaults.headers.common.Authorization = `Bearer ${token}`
 }
 
 // 0️⃣ — Axios JWT setup
 //   • If you already logged in, grab the token and set it globally
-const initialToken = localStorage.getItem('access_token')
+const initialToken = cookieStorage.getItem('access_token')
 if (initialToken) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`
 }
 
 //   • Ensure every new request picks up the freshest token
 axios.interceptors.request.use(config => {
-  const token = localStorage.getItem('access_token')
+  const token = cookieStorage.getItem('access_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
-
 
 // 1️⃣ — Create Vue app
 const app = createApp(App)

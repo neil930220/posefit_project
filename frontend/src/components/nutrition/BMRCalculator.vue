@@ -138,7 +138,7 @@
 </template>
 
 <script>
-import { ref, computed, emit } from 'vue'
+import { ref, computed } from 'vue'
 import nutritionService from '../../services/nutritionService'
 
 export default {

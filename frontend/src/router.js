@@ -12,6 +12,7 @@ import features   from './components/pages/features.vue'
 import help   from './components/pages/help.vue'
 import about   from './components/pages/about.vue'
 import NutritionDashboard from './pages/NutritionDashboard.vue'
+import { cookieStorage } from './utils/cookies'
 
 const routes = [
   { path: '/accounts/signup/',  component: SignupForm,  name: 'SignupForm'  },
@@ -25,12 +26,29 @@ const routes = [
   { path: '/features',component: features,name:'features'},
   { path: '/help',component: help,name:'help'},
   { path: '/about',component: about,name:'about'},
-  { path: '/nutrition', component: NutritionDashboard, name: 'NutritionDashboard' },
+  { 
+    path: '/nutrition', 
+    component: NutritionDashboard, 
+    name: 'NutritionDashboard',
+    meta: { requiresAuth: true }
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(), 
   routes
+})
+
+// Navigation guard
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const isAuthenticated = !!cookieStorage.getItem('access_token')
+
+  if (requiresAuth && !isAuthenticated) {
+    next('/accounts/login/')
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -155,6 +155,7 @@ import axios from 'axios'
 import api from '../services/api'
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { cookieStorage } from '../utils/cookies'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -245,12 +246,13 @@ async function onSubmit() {
   error.value      = null
 
   try {
-    const token = localStorage.getItem('access_token')
+    const token = cookieStorage.getItem('access_token')
     const form = new FormData()
     form.append('image', file.value)
     const { data } = await api.post('api/upload/', form, {
       headers: {
-          Authorization: `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
       },
       withCredentials: true
     })
@@ -261,7 +263,8 @@ async function onSubmit() {
       result.value  = data
       await saveHistory()
     }
-  } catch {
+  } catch (err) {
+    console.error('Upload error:', err)
     alert('分析失敗，請稍後再試')
   } finally {
     loading.value = false
@@ -270,7 +273,7 @@ async function onSubmit() {
 
 async function saveHistory() {
   if (!result.value) return
-  const token = localStorage.getItem('access_token')
+  const token = cookieStorage.getItem('access_token')
   if (!token) return console.warn('⚠️ No token; cannot save history')
 
   const formData = new FormData()

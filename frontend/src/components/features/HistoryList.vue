@@ -74,10 +74,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { cookieStorage } from '../../utils/cookies'
 
 // --- helper to do fetch with JWT header ---
 async function authFetch(url, opts = {}) {
-  const token = localStorage.getItem('access_token')
+  const token = cookieStorage.getItem('access_token')
   const headers = {
     'Content-Type': 'application/json',
     ...(opts.headers || {}),
