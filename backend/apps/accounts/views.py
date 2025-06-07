@@ -1,6 +1,6 @@
 # views.py
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.contrib.auth import views as auth_views
 from django.urls import reverse_lazy
 from .forms import SignUpForm
@@ -9,6 +9,7 @@ from django_ratelimit.decorators import ratelimit
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from .serializers import RegisterSerializer
+import os
 
 class RegisterView(generics.CreateAPIView):
     authentication_classes = []      # ← disable all authentication
@@ -37,32 +38,47 @@ def signup(request):
     else:
         form = SignUpForm()
 
-    return render(request, 'index.html', {'form': form})
+    # Serve the frontend index.html for non-AJAX requests
+    file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'frontend', 'index.html')
+    return FileResponse(open(file_path, 'rb'))
 
 
 # views.py
 from django.contrib.auth import views as auth_views
 from django.http import JsonResponse
 from django.contrib.auth import login as auth_login
+from django.views import View
 
-class LoginView(auth_views.LoginView):
-    template_name = 'index.html'   # 同一份 template 下面掛 Vue
+class LoginView(View):
     @ratelimit(key='ip', rate='10/m', block=True)
     def post(self, request, *args, **kwargs):
+        from django.contrib.auth.forms import AuthenticationForm
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
-        form = self.get_form()
-        if form.is_valid():
-            # 正常登入
-            user = form.get_user()
-            auth_login(request, user)
-            return JsonResponse({'success': True}) if is_ajax else super().form_valid(form)
-        else:
-            errors = form.errors.get_json_data()
-            if is_ajax:
-                # 轉成簡單的 field: [msg, ...] 格式
+        
+        if is_ajax:
+            # Handle AJAX login requests
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                data = request.POST
+            
+            form = AuthenticationForm(request, data=data)
+            if form.is_valid():
+                user = form.get_user()
+                auth_login(request, user)
+                return JsonResponse({'success': True})
+            else:
+                errors = form.errors.get_json_data()
                 clean = {f: [d['message'] for d in v] for f, v in errors.items()}
                 return JsonResponse(clean, status=400)
-            return super().form_invalid(form)
+        else:
+            # For non-AJAX requests, serve the frontend app
+            return self.get(request, *args, **kwargs)
+    
+    def get(self, request, *args, **kwargs):
+        # Serve the frontend index.html for GET requests
+        file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'frontend', 'index.html')
+        return FileResponse(open(file_path, 'rb'))
 
 class LogoutView(auth_views.LogoutView):
     next_page = reverse_lazy('login')
