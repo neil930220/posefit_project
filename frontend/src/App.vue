@@ -20,7 +20,7 @@
       <nav class="flex items-center justify-between px-6 py-4 text-white" style="background-color:#211f21">
         
         <!-- 1. Logo + Main Links -->
-        <div class="flex items-center space-x-8">
+        <div class="flex items-center">
           <!-- Logo -->
           <RouterLink
             to="/"
@@ -29,53 +29,55 @@
             PostFit
           </RouterLink>
 
-          <!-- Main nav -->
-          <RouterLink
-            to="/"
-            exact
-            class="hover:text-gray-200"
-            active-class="underline"
-          >首頁</RouterLink>
+          <!-- Desktop Navigation -->
+          <div class="hidden md:flex items-center space-x-8 ml-8">
+            <RouterLink
+              to="/"
+              exact
+              class="hover:text-gray-200"
+              active-class="underline"
+            >首頁</RouterLink>
 
-          <RouterLink
-            to="/features"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >功能介紹</RouterLink>
+            <RouterLink
+              to="/features"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >功能介紹</RouterLink>
 
-          <RouterLink
-            to="/start"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >開始使用</RouterLink>
+            <RouterLink
+              to="/start"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >開始使用</RouterLink>
 
-          <RouterLink
-            to="/nutrition"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >營養管理</RouterLink>
+            <RouterLink
+              to="/nutrition"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >營養管理</RouterLink>
 
-          <RouterLink
-            to="/history"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >我的紀錄</RouterLink>
+            <RouterLink
+              to="/history"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >我的紀錄</RouterLink>
 
-          <RouterLink
-            to="/help"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >幫助中心</RouterLink>
+            <RouterLink
+              to="/help"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >幫助中心</RouterLink>
 
-          <RouterLink
-            to="/about"
-            class="hover:text-gray-200"
-            active-class="underline"
-          >關於我們</RouterLink>
+            <RouterLink
+              to="/about"
+              class="hover:text-gray-200"
+              active-class="underline"
+            >關於我們</RouterLink>
+          </div>
         </div>
 
         <!-- 2. Auth / Cart Links -->
-        <div class="flex items-center space-x-6">
+        <div class="hidden md:flex items-center space-x-6">
           <template v-if="user">
             <span class="text-gray-400">歡迎，{{ user.username }}</span>
             <button
@@ -98,7 +100,6 @@
 
           <!-- Shopping Cart Icon -->
           <RouterLink to="/cart" class="relative hover:text-gray-200">
-            <!-- you can swap this SVG for any icon library you prefer -->
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-6 w-6"
@@ -113,11 +114,210 @@
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-6-9v9"
               />
             </svg>
-            <!-- optional badge -->
-            <!-- <span class="absolute -top-1 -right-2 inline-block bg-red-500 text-xs rounded-full px-1">3</span> -->
           </RouterLink>
         </div>
+
+        <!-- Mobile Menu Button -->
+        <button 
+          @click="isMobileMenuOpen = !isMobileMenuOpen"
+          class="md:hidden text-white hover:text-gray-200 focus:outline-none"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              v-if="!isMobileMenuOpen"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+            <path
+              v-else
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
       </nav>
+
+      <!-- Mobile Menu -->
+      <transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="transform -translate-x-full"
+        enter-to-class="transform translate-x-0"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="transform translate-x-0"
+        leave-to-class="transform -translate-x-full"
+      >
+        <div
+          v-if="isMobileMenuOpen"
+          class="fixed inset-0 z-40 md:hidden"
+        >
+          <!-- Backdrop -->
+          <div
+            class="fixed inset-0 bg-opacity-20 backdrop-blur-sm"
+            @click="isMobileMenuOpen = false"
+          ></div>
+
+          <!-- Menu Content -->
+          <div class="fixed inset-y-0 left-0 w-72 bg-gradient-to-b from-[#211f21] to-[#1a1819] shadow-2xl border-r border-gray-600">
+            <div class="flex flex-col h-full">
+              <!-- Header Section -->
+              <div class="p-6 border-b border-gray-600 bg-gradient-to-r from-gray-800 to-gray-700">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-xl font-bold text-white">PostFit</h2>
+                  <button 
+                    @click="isMobileMenuOpen = false"
+                    class="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                <template v-if="user">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <span class="text-white font-semibold text-sm">{{ user.username.charAt(0).toUpperCase() }}</span>
+                    </div>
+                    <div>
+                      <p class="text-white font-medium">{{ user.username }}</p>
+                      <button
+                        @click="logout"
+                        class="text-red-400 hover:text-red-300 text-sm transition-colors"
+                      >登出</button>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="space-y-3">
+                    <RouterLink
+                      to="/accounts/login"
+                      class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+                      @click="isMobileMenuOpen = false"
+                    >會員登入</RouterLink>
+                    <RouterLink
+                      to="/accounts/signup"
+                      class="block w-full text-center bg-transparent border border-gray-500 hover:border-gray-400 text-gray-300 hover:text-white py-2 px-4 rounded-lg transition-colors"
+                      @click="isMobileMenuOpen = false"
+                    >會員註冊</RouterLink>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Navigation Links -->
+              <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                <RouterLink
+                  to="/"
+                  exact
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">首頁</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/features"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">功能介紹</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/start"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M9 10V9a2 2 0 012-2h2a2 2 0 012 2v1M9 10H7a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2h-2"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">開始使用</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/nutrition"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">營養管理</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/history"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">我的紀錄</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/help"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">幫助中心</span>
+                </RouterLink>
+
+                <RouterLink
+                  to="/about"
+                  class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
+                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-gray-300 group-hover:text-white transition-colors">關於我們</span>
+                </RouterLink>
+              </nav>
+
+              <!-- Cart Section -->
+              <div class="p-4 border-t border-gray-600 bg-gradient-to-r from-gray-800 to-gray-700">
+                <RouterLink
+                  to="/cart"
+                  class="flex items-center justify-center space-x-3 w-full bg-blue-600 from-blue-600 text-white py-3 px-4 rounded-lg transition-all duration-200 font-medium"
+                  @click="isMobileMenuOpen = false"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-6-9v9"></path>
+                  </svg>
+                  <span>購物車</span>
+                </RouterLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
     </header>
     <!-- flash messages -->
     <transition-group name="fade" tag="div">
@@ -196,6 +396,7 @@ const initialLoading = inject('initialLoading')
 
 const user = ref(null);
 const router = useRouter();
+const isMobileMenuOpen = ref(false);
 
 onMounted(async () => {
   user.value = await fetchUser();
@@ -207,6 +408,7 @@ async function logout() {
     await doLogout();
     user.value = null;
     router.push('/');
+    isMobileMenuOpen.value = false;
   } finally {
     const delay = Math.floor(Math.random() * 300) + 200; // random between 200–500ms
     setTimeout(() => {
@@ -226,5 +428,10 @@ async function logout() {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Prevent body scroll when mobile menu is open */
+.mobile-menu-open {
+  overflow: hidden;
 }
 </style>
