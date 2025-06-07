@@ -16,93 +16,122 @@
         <p class="mt-4 text-white text-lg animate-pulse">Loading…</p>
       </div>
     </transition>
-    <header>
-      <nav class="flex items-center justify-between px-6 py-4 text-white" style="background-color:#211f21">
+    <header class="relative">
+      <nav class="flex items-center justify-between px-8 py-5 text-white shadow-lg border-b border-gray-800" style="background: linear-gradient(135deg, #211f21 0%, #1a1819 100%);">
         
         <!-- 1. Logo + Main Links -->
         <div class="flex items-center">
           <!-- Logo -->
           <RouterLink
             to="/"
-            class="text-2xl font-bold hover:text-gray-200"
+            class="text-2xl font-bold hover:text-gray-200 transition-all duration-300 transform hover:scale-105 mr-10"
           >
-            PostFit
+            <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Post</span><span class="text-white">Fit</span>
           </RouterLink>
 
           <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center space-x-8 ml-8">
+          <div class="hidden md:flex items-center space-x-1">
             <RouterLink
               to="/"
               exact
-              class="hover:text-gray-200"
-              active-class="underline"
-            >首頁</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              首頁
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/features"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >功能介紹</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              功能介紹
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/start"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >開始使用</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              開始使用
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/nutrition"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >營養管理</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              營養管理
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/history"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >我的紀錄</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              我的紀錄
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/help"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >幫助中心</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              幫助中心
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
 
             <RouterLink
               to="/about"
-              class="hover:text-gray-200"
-              active-class="underline"
-            >關於我們</RouterLink>
+              class="px-4 py-2 rounded-lg hover:bg-gray-700 hover:bg-opacity-60 transition-all duration-200 font-medium relative group"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300"
+            >
+              關於我們
+              <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+            </RouterLink>
           </div>
         </div>
 
         <!-- 2. Auth / Cart Links -->
-        <div class="hidden md:flex items-center space-x-6">
+        <div class="hidden md:flex items-center space-x-4">
           <template v-if="user">
-            <span class="text-gray-400">歡迎，{{ user.username }}</span>
+            <div class="flex items-center space-x-3 px-3 py-2 bg-gray-800 bg-opacity-50 rounded-lg border border-gray-700">
+              <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span class="text-white font-semibold text-xs">{{ user.username.charAt(0).toUpperCase() }}</span>
+              </div>
+              <span class="text-gray-300 font-medium">{{ user.username }}</span>
+            </div>
             <button
               @click="logout"
-              class="hover:underline text-red-400"
+              class="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-900 hover:bg-opacity-20 rounded-lg transition-all duration-200 font-medium border border-transparent hover:border-red-600"
             >登出</button>
           </template>
           <template v-else>
             <RouterLink
               to="/accounts/login"
-              class="hover:text-gray-200"
-              active-class="underline"
+              class="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-60 rounded-lg transition-all duration-200 font-medium border border-transparent hover:border-gray-600"
+              active-class="bg-blue-600 bg-opacity-20 text-gray-300 border-blue-500"
             >會員登入</RouterLink>
             <RouterLink
               to="/accounts/signup"
-              class="hover:text-gray-200"
-              active-class="underline"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+              active-class="bg-blue-700"
             >會員註冊</RouterLink>
           </template>
 
           <!-- Shopping Cart Icon -->
-          <RouterLink to="/cart" class="relative hover:text-gray-200">
+          <RouterLink 
+            to="/cart" 
+            class="relative p-3 hover:bg-gray-700 hover:bg-opacity-60 rounded-lg transition-all duration-200 group"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
+              class="h-6 w-6 text-gray-300 group-hover:text-white transition-colors duration-200"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -120,7 +149,7 @@
         <!-- Mobile Menu Button -->
         <button 
           @click="isMobileMenuOpen = !isMobileMenuOpen"
-          class="md:hidden text-white hover:text-gray-200 focus:outline-none"
+          class="md:hidden p-2 text-white hover:text-gray-200 hover:bg-gray-700 hover:bg-opacity-60 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -219,7 +248,7 @@
                   to="/"
                   exact
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,7 +260,7 @@
                 <RouterLink
                   to="/features"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +272,7 @@
                 <RouterLink
                   to="/start"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +284,7 @@
                 <RouterLink
                   to="/nutrition"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,7 +296,7 @@
                 <RouterLink
                   to="/history"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,7 +308,7 @@
                 <RouterLink
                   to="/help"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +320,7 @@
                 <RouterLink
                   to="/about"
                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-700 hover:bg-opacity-50 transition-all duration-200 group"
-                  active-class="bg-blue-600 bg-opacity-20 text-blue-400 font-semibold"
+                  active-class="bg-blue-600 bg-opacity-20 text-gray-300 font-semibold"
                   @click="isMobileMenuOpen = false"
                 >
                   <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
