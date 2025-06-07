@@ -7,14 +7,13 @@ class NutritionService {
         return response.data
     }
 
-    async createOrUpdateProfile(profileData) {
+    async updateUserProfile(profileData) {
         const response = await api.put('api/nutrition/profile/', profileData)
         return response.data
     }
 
     // Weight record endpoints
     async getWeightRecords() {
-        console.log('Making weight records request to:', api.defaults.baseURL + 'api/nutrition/weight-records/');
         const response = await api.get('api/nutrition/weight-records/')
         return response.data
     }
@@ -40,7 +39,7 @@ class NutritionService {
         return response.data
     }
 
-    async createGoal(goalData) {
+    async addGoal(goalData) {
         const response = await api.post('api/nutrition/goals/', goalData)
         return response.data
     }
@@ -55,60 +54,25 @@ class NutritionService {
         return response.data
     }
 
-    // Calculation endpoints
-    async calculateBMRTDEE(data) {
-        const response = await api.post('api/nutrition/calculate-bmr-tdee/', data)
+    // Analytics endpoints
+    async getWeightAnalytics(dateRange = '30d') {
+        const response = await api.get(`api/nutrition/analytics/?range=${dateRange}`)
         return response.data
     }
 
-    // Analytics endpoints
-    async getWeightAnalytics(dateRange = 'week') {
-        try {
-            console.log('Fetching weight analytics with dateRange:', dateRange);
-            const response = await api.get(`api/nutrition/analytics/?range=${dateRange}`);
-            
-            // Log the response for debugging
-            console.log('Weight analytics response:', {
-                status: response.status,
-                headers: response.headers,
-                data: response.data
-            });
-
-            // Validate response format
-            if (!response.data || typeof response.data !== 'object') {
-                throw new Error(`Invalid response format from analytics endpoint: ${JSON.stringify(response.data)}`);
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching weight analytics:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
-                headers: error.response?.headers
-            });
-            
-            // Return a default structure in case of error
-            return {
-                analytics: {
-                    current_weight: null,
-                    starting_weight: null,
-                    weight_change: null
-                },
-                chart_data: {
-                    dates: [],
-                    weights: [],
-                    bmr: [],
-                    tdee: []
-                },
-                goal_progress: null,
-                date_range: dateRange
-            };
-        }
+    async getCalorieProgress(dateRange = '7d', comparisonType = 'tdee') {
+        const response = await api.get(`api/nutrition/calorie-progress/?range=${dateRange}&type=${comparisonType}`)
+        return response.data
     }
 
     async getDashboardSummary() {
         const response = await api.get('api/nutrition/dashboard/')
+        return response.data
+    }
+
+    // Calculation endpoints
+    async calculateBMRTDEE(data) {
+        const response = await api.post('api/nutrition/calculate-bmr-tdee/', data)
         return response.data
     }
 }

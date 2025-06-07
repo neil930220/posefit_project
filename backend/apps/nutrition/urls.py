@@ -20,5 +20,6 @@ urlpatterns = [
     
     # Analytics endpoints
     path('analytics/', views.weight_progress_analytics, name='weight-analytics'),
+    path('calorie-progress/', views.calorie_progress_analytics, name='calorie-progress'),
     path('dashboard/', views.dashboard_summary, name='dashboard-summary'),
 ] 

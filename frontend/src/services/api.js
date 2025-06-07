@@ -18,15 +18,6 @@ const api = axios.create({
 // Add request interceptor
 api.interceptors.request.use(
     (config) => {
-        // Log request details for debugging
-        console.log('API Request:', {
-            url: config.url,
-            method: config.method,
-            baseURL: config.baseURL,
-            headers: config.headers,
-            hasToken: !!cookieStorage.getItem('access_token')
-        });
-
         // Add auth token if available
         const token = cookieStorage.getItem('access_token');
         if (token) {
@@ -43,13 +34,6 @@ api.interceptors.request.use(
 // Add response interceptor
 api.interceptors.response.use(
     (response) => {
-        // Log response details for debugging
-        console.log('API Response:', {
-            url: response.config.url,
-            status: response.status,
-            headers: response.headers,
-            data: response.data
-        });
         return response;
     },
     async (error) => {

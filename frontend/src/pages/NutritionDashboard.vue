@@ -70,23 +70,8 @@
             </div>
           </div>
 
-          <!-- Weight Progress Chart -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 class="text-lg font-medium text-gray-900">體重進度圖表</h2>
-              <select v-model="selectedTimeRange" @change="loadAnalytics" class="border border-gray-300 rounded-md px-3 py-1 text-sm">
-                <option value="7d">最近7天</option>
-                <option value="30d">最近30天</option>
-                <option value="90d">最近90天</option>
-                <option value="6m">最近6個月</option>
-                <option value="1y">最近1年</option>
-                <option value="all">全部</option>
-              </select>
-            </div>
-            <div class="p-6">
-              <WeightChart :analytics-data="analyticsData" />
-            </div>
-          </div>
+          <!-- Calorie Progress Meter -->
+          <CalorieProgressMeter />
         </div>
 
         <!-- Right Column -->
@@ -157,23 +142,23 @@
 import { ref, onMounted, computed } from 'vue'
 import nutritionService from '../services/nutritionService'
 import BMRCalculator from '../components/nutrition/BMRCalculator.vue'
-import WeightChart from '../components/nutrition/WeightChart.vue'
 import GoalProgress from '../components/nutrition/GoalProgress.vue'
 import RecentWeightRecords from '../components/nutrition/RecentWeightRecords.vue'
 import ProfileModal from '../components/nutrition/ProfileModal.vue'
 import WeightModal from '../components/nutrition/WeightModal.vue'
 import GoalModal from '../components/nutrition/GoalModal.vue'
+import CalorieProgressMeter from '../components/nutrition/CalorieProgressMeter.vue'
 
 export default {
   name: 'NutritionDashboard',
   components: {
     BMRCalculator,
-    WeightChart,
     GoalProgress,
     RecentWeightRecords,
     ProfileModal,
     WeightModal,
-    GoalModal
+    GoalModal,
+    CalorieProgressMeter
   },
   setup() {
     const dashboardData = ref({})
