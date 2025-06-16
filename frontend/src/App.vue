@@ -357,7 +357,7 @@
 
     <main>
       <!-- your pages here -->
-      <RouterView />
+      <RouterView @user-updated="handleUserUpdated" />
     </main>
 
     <footer class="bg-[#1e2021] text-gray-400">
@@ -428,8 +428,18 @@ const router = useRouter();
 const isMobileMenuOpen = ref(false);
 
 onMounted(async () => {
-  user.value = await fetchUser();
+  try {
+    user.value = await fetchUser();
+  } catch (err) {
+    console.error('Error fetching user:', err);
+  } finally {
+    initialLoading.value = false;
+  }
 });
+
+function handleUserUpdated(userData) {
+  user.value = userData;
+}
 
 async function logout() {
   loadingApp.value = true;

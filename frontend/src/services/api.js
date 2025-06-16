@@ -46,15 +46,18 @@ api.interceptors.response.use(
 
         const originalRequest = error.config;
 
-        // Handle 401 Unauthorized errors
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Only attempt token refresh for 401 errors and not for token endpoints
+        if (error.response?.status === 401 && 
+            !originalRequest._retry && 
+            !originalRequest.url.includes('/token/')) {
             originalRequest._retry = true;
 
             try {
                 // Try to refresh the token
                 const refreshToken = cookieStorage.getItem('refresh_token');
                 if (!refreshToken) {
-                    throw new Error('No refresh token available');
+                    // If no refresh token, just reject the error
+                    return Promise.reject(error);
                 }
 
                 const response = await axios.post(
@@ -70,20 +73,20 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (refreshError) {
                 console.error('Token refresh failed:', refreshError);
-                // Clear tokens and redirect to login
+                // Clear tokens and redirect to login only if not already on login page
                 cookieStorage.removeItem('access_token');
                 cookieStorage.removeItem('refresh_token');
-                if (router.currentRoute.value.name !== 'login') {
-                    router.push('/login');
+                if (router.currentRoute.value.name !== 'LoginForm') {
+                    router.push('/accounts/login/');
                 }
-                return Promise.reject(refreshError);
+                return Promise.reject(error);
             }
         }
 
         // Handle 403 Forbidden errors
         if (error.response?.status === 403) {
-            if (router.currentRoute.value.name !== 'login') {
-                router.push('/login');
+            if (router.currentRoute.value.name !== 'LoginForm') {
+                router.push('/accounts/login/');
             }
         }
 

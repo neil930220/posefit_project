@@ -81,9 +81,15 @@
 import axios from 'axios';
 import api from '../../services/api';
 import { cookieStorage } from '../../utils/cookies';
+import { useRouter } from 'vue-router';
+import { fetchUser } from '../../services/api';
 
 export default {
   name: 'LoginForm',
+  setup() {
+    const router = useRouter();
+    return { router };
+  },
   data() {
     return {
       form: { 
@@ -109,8 +115,6 @@ export default {
           password: this.form.password
         });
 
-        console.log(data)
-
         // 2. Save tokens to cookies instead of localStorage
         cookieStorage.setItem('access_token', data.access, this.form.keepLogin);
         cookieStorage.setItem('refresh_token', data.refresh, this.form.keepLogin);
@@ -118,26 +122,63 @@ export default {
         // 3. Set default Authorization header
         axios.defaults.headers.common.Authorization = `Bearer ${data.access}`;
         
-        // 4. Redirect home
-        window.location.href = '/';
+        // 4. Fetch user information
+        const userData = await fetchUser();
+        if (!userData) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        // 5. Emit user data update event
+        this.$emit('user-updated', userData);
+        
+        // 6. Redirect home using Vue Router
+        this.router.push('/');
       }
-    
       catch (err) {
+        console.error('Login error:', {
+          status: err.response?.status,
+          data: err.response?.data,
+          message: err.message
+        });
+        
         const status = err.response?.status;
-        switch (status) {
-          case 401:
+        const data = err.response?.data;
+
+        // Handle JWT token endpoint errors
+        if (status === 401) {
+          if (data?.detail === 'No active account found with the given credentials') {
             this.nonFieldError = '帳號或密碼錯誤';
-            break;
-          case 429:
-            this.nonFieldError = 'too many attempt,try later';
-            break;
-          case 400:
-            this.errors = err.response.data;
-            break;
-          default:
-            this.nonFieldError = '伺服器錯誤，請稍後再試';
-}
-}
+          } else {
+            this.nonFieldError = '認證失敗，請重新登入';
+          }
+        }
+        else if (status === 429) {
+          this.nonFieldError = '登入嘗試次數過多，請稍後再試';
+        }
+        else if (status === 400) {
+          if (data?.detail) {
+            this.nonFieldError = data.detail;
+          } else if (data?.non_field_errors) {
+            this.nonFieldError = data.non_field_errors[0];
+          } else if (data?.username) {
+            this.errors = { username: data.username };
+          } else if (data?.password) {
+            this.errors = { password: data.password };
+          } else {
+            this.errors = data;
+          }
+        }
+        else if (status === 500) {
+          this.nonFieldError = '伺服器發生錯誤，請稍後再試';
+        }
+        else {
+          if (err.message === 'Network Error') {
+            this.nonFieldError = '無法連接到伺服器，請檢查您的網路連線';
+          } else {
+            this.nonFieldError = '發生錯誤，請稍後再試';
+          }
+        }
+      }
       finally {
         this.loading = false;
       }

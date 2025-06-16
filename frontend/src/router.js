@@ -41,13 +41,21 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const isAuthenticated = !!cookieStorage.getItem('access_token')
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const isAuthenticated = !!cookieStorage.getItem('access_token');
+  const isLoginPage = to.name === 'LoginForm';
 
+  // If trying to access a protected route without auth
   if (requiresAuth && !isAuthenticated) {
-    next('/accounts/login/')
-  } else {
-    next()
+    next('/accounts/login/');
+  }
+  // If already authenticated and trying to access login page
+  else if (isAuthenticated && isLoginPage) {
+    next('/');
+  }
+  // Otherwise proceed normally
+  else {
+    next();
   }
 })
 
