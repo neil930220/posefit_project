@@ -44,8 +44,8 @@ pip install -r requirements/development.txt
 if [ ! -f ".env" ]; then
     echo "📝 Creating environment file..."
     if [ -f ".env.example" ]; then
-        cp .env.example .env
-        echo "⚠️  Please edit .env file with your database credentials and API keys"
+    cp .env.example .env
+    echo "⚠️  Please edit .env file with your database credentials and API keys"
     else
         echo "⚠️  No .env.example found. You may need to create .env manually."
     fi

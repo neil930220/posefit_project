@@ -116,6 +116,7 @@
               to="/accounts/login"
               class="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 hover:bg-opacity-60 rounded-lg transition-all duration-200 font-medium border border-transparent hover:border-gray-600"
               active-class="bg-blue-600 bg-opacity-20 text-gray-300 border-blue-500"
+              @click="console.log('Login link clicked')"
             >會員登入</RouterLink>
             <RouterLink
               to="/accounts/signup"
@@ -231,7 +232,7 @@
                     <RouterLink
                       to="/accounts/login"
                       class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors font-medium"
-                      @click="isMobileMenuOpen = false"
+                      @click="isMobileMenuOpen = false; console.log('Mobile login link clicked')"
                     >會員登入</RouterLink>
                     <RouterLink
                       to="/accounts/signup"
@@ -417,6 +418,7 @@
 import { ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchUser, fetchMessages, doLogout } from './services/api'
+import { cookieStorage } from './utils/cookies'
 import "./assets/style.css"
 
 // injected loading flags
@@ -429,9 +431,16 @@ const isMobileMenuOpen = ref(false);
 
 onMounted(async () => {
   try {
+    // Only try to fetch user if we have a token
+    const token = cookieStorage.getItem('access_token');
+    if (token) {
     user.value = await fetchUser();
+    }
   } catch (err) {
+    // Don't log errors for invalid tokens - this is expected
+    if (err.response?.status !== 401) {
     console.error('Error fetching user:', err);
+    }
   } finally {
     initialLoading.value = false;
   }

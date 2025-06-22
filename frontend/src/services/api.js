@@ -112,13 +112,15 @@ async function safeJson(res) {
 
 export async function fetchUser() {
   try {
-    const res = await fetch("/accounts/api/user/", {
-      headers: authHeaders(),
-    });
-    if (!res.ok) return null;
-    return await safeJson(res);
+    const response = await api.get('/accounts/api/user/');
+    return response.data;
   } catch (err) {
     console.error("Error fetching user:", err);
+    // If we get a 401, the token is invalid, so clear it
+    if (err.response?.status === 401) {
+      cookieStorage.removeItem('access_token');
+      cookieStorage.removeItem('refresh_token');
+    }
     return null;
   }
 }
