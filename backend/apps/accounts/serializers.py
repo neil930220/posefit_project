@@ -65,9 +65,23 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        if attrs['password1'] != attrs.pop('password2'):
+        if attrs['password1'] != attrs['password2']:
             raise serializers.ValidationError({"password": "密碼不一致"})
         return attrs
+
+    def create(self, validated_data):
+        # Remove password1 and password2 from validated_data
+        password = validated_data.pop('password1')
+        validated_data.pop('password2', None)  # Remove password2 if it exists
+        
+        # Create user with remaining data
+        user = User.objects.create_user(**validated_data)
+        
+        # Set password properly
+        user.set_password(password)
+        user.save()
+        
+        return user
     
 
 class UserSerializer(serializers.ModelSerializer):

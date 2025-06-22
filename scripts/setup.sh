@@ -4,6 +4,12 @@
 
 echo "🍕 Setting up FoodCam development environment..."
 
+# Store the root directory and navigate to it
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+echo "📁 Project root: $ROOT_DIR"
+
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
     echo "❌ Python 3 is not installed. Please install Python 3.12+ first."
@@ -37,8 +43,12 @@ pip install -r requirements/development.txt
 # Copy environment file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo "📝 Creating environment file..."
-    cp .env.example .env
-    echo "⚠️  Please edit .env file with your database credentials and API keys"
+    if [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo "⚠️  Please edit .env file with your database credentials and API keys"
+    else
+        echo "⚠️  No .env.example found. You may need to create .env manually."
+    fi
 fi
 
 # Run migrations
