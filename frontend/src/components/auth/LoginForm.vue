@@ -177,8 +177,8 @@ export default {
           } else {
             this.nonFieldError = '發生錯誤，請稍後再試';
           }
-        }
-      }
+}
+}
       finally {
         this.loading = false;
       }

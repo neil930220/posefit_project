@@ -19,17 +19,19 @@ FRONTEND_URL = 'http://localhost:5173'
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://192.168.12.165:5173",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    "http://192.168.12.165:5173",
 ]
 
 # Django Vite settings for development
 DJANGO_VITE = {
     "default": {
         "dev_mode": True,
-        "dev_server_host": "localhost",
+        "dev_server_host": "192.168.12.165",
         "dev_server_port": 5173,
     }
 }
