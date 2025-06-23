@@ -16,13 +16,36 @@ export default defineConfig({
   },
   server: {
     https: false,   // disable HTTPS
-    host: true,
+    host: '0.0.0.0', // Allow external connections
+    port: 5173,
+    cors: true, // Enable CORS
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
+    },
     proxy: {
-      '/api': 'http://localhost:8000',
-      '/accounts': 'http://localhost:8000',
-      '/media': 'http://localhost:8000',
-      '/upload': 'http://localhost:8000',     
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/accounts': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/media': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/upload': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      }
     }
   },
-  plugins: [vue(),tailwindcss(),],
+  plugins: [vue(), tailwindcss()],
 })
