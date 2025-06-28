@@ -12,14 +12,54 @@ from .serializers import (
 )
 
 
+def get_current_date_in_timezone():
+    """Get current date in the configured timezone"""
+    from django.conf import settings
+    import pytz
+    
+    # Get the configured timezone
+    tz = pytz.timezone(settings.TIME_ZONE)
+    # Get current time in that timezone
+    now_in_tz = timezone.now().astimezone(tz)
+    return now_in_tz.date()
+
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """Get or update user profile"""
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        profile, created = UserProfile.objects.get_or_create(user=self.request.user)
-        return profile
+        try:
+            return UserProfile.objects.get(user=self.request.user)
+        except UserProfile.DoesNotExist:
+            return None
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance is None:
+            return Response(
+                {'error': 'Profile not found. Please create your profile first.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance is None:
+            # Create new profile if it doesn't exist
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Update existing profile
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)
@@ -99,7 +139,7 @@ def weight_progress_analytics(request):
     date_range = request.GET.get('range', '30d')
     
     # Calculate date filtering
-    end_date = timezone.now().date()
+    end_date = get_current_date_in_timezone()
     if date_range == '7d':
         start_date = end_date - timedelta(days=7)
     elif date_range == '30d':
@@ -195,7 +235,7 @@ def calorie_progress_analytics(request):
     comparison_type = request.GET.get('type', 'tdee')  # 'bmr' or 'tdee'
     
     # Calculate date filtering
-    end_date = timezone.now().date()
+    end_date = get_current_date_in_timezone()
     if date_range == '1d':
         start_date = end_date
     elif date_range == '7d':

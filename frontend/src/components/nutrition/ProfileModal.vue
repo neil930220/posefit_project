@@ -182,7 +182,7 @@ export default {
         loading.value = true
         error.value = ''
         
-        await nutritionService.createOrUpdateProfile(formData.value)
+        await nutritionService.updateUserProfile(formData.value)
         emit('saved')
       } catch (err) {
         error.value = err.response?.data?.message || '儲存失敗，請重試'

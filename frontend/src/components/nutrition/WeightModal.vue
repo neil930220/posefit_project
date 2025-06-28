@@ -107,6 +107,7 @@
 <script>
 import { ref, computed, onMounted, watch } from 'vue'
 import nutritionService from '../../services/nutritionService'
+import { getTodayDate } from '../../utils/dateUtils'
 
 export default {
   name: 'WeightModal',
@@ -120,7 +121,7 @@ export default {
   setup(props, { emit }) {
     const formData = ref({
       weight: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayDate(),
       notes: ''
     })
 

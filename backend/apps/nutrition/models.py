@@ -2,8 +2,18 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.conf import settings
+import pytz
 
 User = get_user_model()
+
+
+def get_today_date():
+    """Get today's date in the configured timezone"""
+    # Get the configured timezone
+    tz = pytz.timezone(settings.TIME_ZONE)
+    # Get current time in that timezone
+    now_in_tz = timezone.now().astimezone(tz)
+    return now_in_tz.date()
 
 
 class UserProfile(models.Model):
@@ -59,7 +69,7 @@ class UserProfile(models.Model):
 class WeightRecord(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='weight_records')
     weight = models.FloatField(help_text="Weight in kg")
-    date = models.DateField(default=timezone.now)
+    date = models.DateField(default=get_today_date)
     notes = models.TextField(blank=True, null=True)
     bmr = models.FloatField(null=True, blank=True, help_text="BMR calculated at this weight")
     tdee = models.FloatField(null=True, blank=True, help_text="TDEE calculated at this weight")

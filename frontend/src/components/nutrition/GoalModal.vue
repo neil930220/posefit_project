@@ -134,6 +134,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import nutritionService from '../../services/nutritionService'
+import { getTodayDate, formatDateToString } from '../../utils/dateUtils'
 
 export default {
   name: 'GoalModal',
@@ -143,7 +144,7 @@ export default {
       current_weight: '',
       start_weight: '',
       target_weight: '',
-      start_date: new Date().toISOString().split('T')[0],
+      start_date: getTodayDate(),
       target_date: ''
     })
 
@@ -209,7 +210,7 @@ export default {
       // Set default target date to 3 months from now
       const targetDate = new Date()
       targetDate.setMonth(targetDate.getMonth() + 3)
-      formData.value.target_date = targetDate.toISOString().split('T')[0]
+      formData.value.target_date = formatDateToString(targetDate)
     })
 
     return {
