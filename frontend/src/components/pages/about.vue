@@ -1,6 +1,6 @@
 <template>
     <section
-        class="min-h-[calc(100vh-8rem)] flex items-center justify-center relative bg-[url('/assets/pattern.svg')] bg-cover bg-center"
+        class="min-h-[calc(100vh-8rem)] flex items-center justify-center relative bg-[url('/assets/pattern.svg')] bg-cover bg-center bg-gray-50"
     >
     <!-- dark overlay -->
     <div class="absolute inset-0 bg-black bg-opacity-75"></div>

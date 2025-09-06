@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col bg-gray-50">
 
     <!-- Hero Section -->
     <section

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#ffffff] p-6">
+  <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Left Section: Nutrition Information -->
       <div class="bg-[#2a2b2c] rounded-xl shadow-lg h-[800px] flex flex-col">
