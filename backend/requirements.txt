@@ -1,0 +1,5 @@
+# This file is for Zeabur deployment
+# It points to the actual production requirements
+
+-r requirements/production.txt
+

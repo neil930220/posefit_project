@@ -1,0 +1,77 @@
+# ============================================
+# Zeabur 後端服務環境變數設定
+# 服務名稱: posefit-project
+# 後端域名: posefit.zeabur.app
+# ============================================
+# 
+# 使用說明：
+# 1. 複製以下所有環境變數
+# 2. 在 Zeabur 後端服務的「環境變數」頁面逐一新增
+# 3. 修改標記為 <需要修改> 的值
+# 4. 儲存後重新部署服務
+# 
+# ============================================
+
+# ===== 基本 Django 設定 =====
+DEBUG=False
+SECRET_KEY=t)onv50cty$hyx%_(mc$y=k0p!n383$avn)*$pmq8%8zh-aqv-^q-@c-(_=e
+DJANGO_SETTINGS_MODULE=config.settings.production
+
+# ===== 主機與域名設定 =====
+# 後端域名（已自動填入）
+ALLOWED_HOSTS=posefit.zeabur.app
+
+# 前端域名（等前端部署後更新此值）
+FRONTEND_URL=https://posefit.zeabur.app
+
+# ===== CORS 與 CSRF 安全設定 =====
+# 允許的來源（前端部署後需更新）
+CORS_ALLOWED_ORIGINS=https://posefit.zeabur.app
+
+# CSRF 信任來源
+CSRF_TRUSTED_ORIGINS=https://posefit.zeabur.app
+
+# ===== 資料庫設定 (MySQL) =====
+# ⚠️ 如果您使用 Zeabur MySQL 服務，它會自動注入以下變數：
+# MYSQL_HOST, MYSQL_PORT, MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_DATABASE
+# 
+# 如果 Zeabur 使用這些變數名，您需要在 production.py 中調整
+# 或者手動設定以下變數：
+
+DB_NAME=posefit_db
+DB_USER=root
+DB_PASSWORD=ytOopf10Z94IDs83X2E7Q5ilve6YxUNm
+DB_HOST=mysql.zeabur.internal
+DB_PORT=3306
+
+# ===== API 金鑰 =====
+# Google Gemini AI API 金鑰 <需要修改>
+# 取得金鑰：https://makersuite.google.com/app/apikey
+GOOGLE_GENERATIVE_AI_API_KEY=<請填入你的Gemini API金鑰>
+
+# ===== 郵件設定 (選用) =====
+# 如果需要發送郵件功能，請取消註解並填入
+# EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+# EMAIL_HOST=smtp.gmail.com
+# EMAIL_PORT=587
+# EMAIL_HOST_USER=<你的Gmail帳號>
+# EMAIL_HOST_PASSWORD=<Gmail應用程式密碼>
+
+# ===== 其他設定 =====
+# Zeabur 自動設定的端口
+PORT=${WEB_PORT}
+
+# ============================================
+# 部署後的檢查清單
+# ============================================
+# 
+# ✅ 1. 檢查所有環境變數是否已設定
+# ✅ 2. 確認 GOOGLE_GENERATIVE_AI_API_KEY 已填入
+# ✅ 3. 部署後檢查服務日誌是否有錯誤
+# ✅ 4. 執行資料庫遷移：python manage.py migrate
+# ✅ 5. 收集靜態檔案：python manage.py collectstatic --noinput
+# ✅ 6. 建立管理員帳號：python manage.py createsuperuser
+# ✅ 7. 前端部署後更新 FRONTEND_URL 和 CORS 設定
+# 
+# ============================================
+
