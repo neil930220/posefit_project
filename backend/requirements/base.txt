@@ -15,6 +15,9 @@ mysqlclient==2.2.7
 # Environment management
 python-dotenv==1.1.0
 
+# Password hashing
+argon2-cffi==23.1.0
+
 # Machine Learning
 torch
 torchvision
