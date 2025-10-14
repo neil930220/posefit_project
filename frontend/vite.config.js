@@ -18,6 +18,7 @@ export default defineConfig({
     '__DEFINES__': JSON.stringify({}),
     '__BASE__': JSON.stringify('/'),
     '__SERVER_HOST__': JSON.stringify('http://localhost:8000'),
+    '__WS_TOKEN__': JSON.stringify(null),
     '__HMR_CONFIG_NAME__': JSON.stringify('default'),
     '__HMR_PROTOCOL__': JSON.stringify('ws'),
     '__HMR_HOSTNAME__': JSON.stringify(null),
