@@ -113,7 +113,6 @@
 
     <!-- Stats Summary -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" v-if="entries.length > 0">
-      {{ logTemplateRender('stats-summary', `Showing stats summary, entries: ${entries.length}`) }}
       <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
         <div class="flex items-center justify-between">
           <div>
@@ -159,7 +158,6 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {{ logTemplateRender('loading', `Showing loading state, entries: ${entries.length}, error: ${error}`) }}
       <div
         v-for="i in 6"
         :key="i"
@@ -179,7 +177,6 @@
       v-else-if="!entries.length && !error"
       class="text-center py-20"
     >
-      {{ logTemplateRender('empty-state', `Showing empty state, entries: ${entries.length}, error: ${error}, loading: ${loading}`) }}
       <div class="max-w-md mx-auto">
         <div class="w-32 h-32 mx-auto mb-8 bg-gray-100 rounded-full flex items-center justify-center">
           <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +201,6 @@
 
     <!-- History Cards Grid -->
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {{ logTemplateRender('history-grid', `Showing history grid, entries: ${entries.length}, error: ${error}, loading: ${loading}`) }}
       <div
         v-for="entry in entries"
         :key="entry.id"
@@ -263,7 +259,6 @@
 
     <!-- Error State -->
     <div v-if="error" class="text-center py-16">
-      {{ logTemplateRender('error-state', `Showing error state, entries: ${entries.length}, error: ${error}, loading: ${loading}`) }}
       <div class="max-w-md mx-auto">
         <div class="w-24 h-24 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
           <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,75 +287,15 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { cookieStorage } from '../../utils/cookies'
+import api from '../../services/api'
 
-// --- helper to do fetch with JWT header ---
-async function authFetch(url, opts = {}) {
-  const token = cookieStorage.getItem('access_token')
-  console.log('authFetch: Making request to:', url)
-  console.log('authFetch: Token present:', !!token)
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(opts.headers || {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
-  const res = await fetch(url, { ...opts, headers })
-
-  console.log('authFetch: Response status:', res.status)
-  console.log('authFetch: Response headers:', Object.fromEntries(res.headers.entries()))
-
-  if (!res.ok) {
-    // Try to get error details from response
-    let errorMessage = `HTTP ${res.status}`
-    try {
-      const contentType = res.headers.get('content-type')
-      console.log('authFetch: Error response content-type:', contentType)
-
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await res.json()
-        console.log('authFetch: Error response JSON:', errorData)
-        errorMessage = errorData.detail || errorData.message || errorMessage
-      } else {
-        // For non-JSON responses, try to get text
-        const text = await res.text()
-        console.log('authFetch: Error response text (first 200 chars):', text.substring(0, 200))
-        if (text) {
-          errorMessage = `HTTP ${res.status}: ${text.substring(0, 100)}...`
-        }
-      }
-    } catch (e) {
-      // If we can't parse the error response, just use the status
-      console.warn('authFetch: Could not parse error response:', e)
-    }
-    console.error('authFetch: Throwing error:', errorMessage)
-    throw new Error(errorMessage)
-  }
-
-  // Check if response is JSON before parsing
-  const contentType = res.headers.get('content-type')
-  console.log('authFetch: Success response content-type:', contentType)
-
-  if (contentType && contentType.includes('application/json')) {
-    const jsonData = await res.json()
-    console.log('authFetch: Parsed JSON data:', jsonData)
-    return jsonData
-  } else {
-    // For non-JSON responses, return the response object
-    console.log('authFetch: Returning non-JSON response object')
-    return res
-  }
-}
+// Use the centralized API instance which handles authentication and base URL
 
 // Reactive data
 const entries = ref([])
 const loading = ref(false)
 const error = ref(false)
 const sortOption = ref('-created_at')
-
-// Debug logging for template rendering
-function logTemplateRender(condition, message) {
-  console.log(`Template render [${condition}]: ${message}`)
-}
 
 // Filter state
 const filters = ref({
@@ -408,44 +343,33 @@ function formatTime(dateString) {
 
 // Build query parameters for API call
 function buildQueryParams() {
-  console.log('buildQueryParams: Current filters:', filters.value)
-  console.log('buildQueryParams: Current sort option:', sortOption.value)
-
   const params = new URLSearchParams()
 
   if (filters.value.period) {
-    console.log('buildQueryParams: Adding period filter:', filters.value.period)
     params.append('period', filters.value.period)
   }
 
   if (filters.value.dateFrom) {
-    console.log('buildQueryParams: Adding date_from filter:', filters.value.dateFrom)
     params.append('date_from', filters.value.dateFrom)
   }
 
   if (filters.value.dateTo) {
-    console.log('buildQueryParams: Adding date_to filter:', filters.value.dateTo)
     params.append('date_to', filters.value.dateTo)
   }
 
   if (filters.value.caloriesMin) {
-    console.log('buildQueryParams: Adding calories_min filter:', filters.value.caloriesMin)
     params.append('calories_min', filters.value.caloriesMin)
   }
 
   if (filters.value.caloriesMax) {
-    console.log('buildQueryParams: Adding calories_max filter:', filters.value.caloriesMax)
     params.append('calories_max', filters.value.caloriesMax)
   }
 
   if (sortOption.value) {
-    console.log('buildQueryParams: Adding ordering:', sortOption.value)
     params.append('ordering', sortOption.value)
   }
 
-  const result = params.toString()
-  console.log('buildQueryParams: Final query string:', result)
-  return result
+  return params.toString()
 }
 
 // Load entries from API
@@ -455,25 +379,21 @@ async function loadEntries() {
   error.value = false
   try {
     const queryParams = buildQueryParams()
-    const url = `/api/history/entries/${queryParams ? '?' + queryParams : ''}`
-    console.log('loadEntries: Final URL:', url)
-    console.log('loadEntries: Query params:', queryParams)
+    const url = `history/entries/${queryParams ? '?' + queryParams : ''}`
+    console.log('loadEntries: API URL:', url)
 
-    const data = await authFetch(url)
-    console.log('loadEntries: Received data:', data)
-    console.log('loadEntries: Data type:', typeof data)
-    console.log('loadEntries: Is array?', Array.isArray(data))
-    console.log('loadEntries: Data length:', data ? data.length : 'N/A')
+    const response = await api.get(url)
+    console.log('loadEntries: Received', response.data.length, 'entries')
 
-    entries.value = data
-    console.log('loadEntries: Set entries to:', entries.value)
+    entries.value = response.data
   } catch (e) {
-    console.error('loadEntries: fetch history failed:', e)
-    console.error('loadEntries: Error stack:', e.stack)
+    console.error('loadEntries: API call failed:', e.message)
+    if (e.response) {
+      console.error('loadEntries: Error status:', e.response.status, 'data:', e.response.data)
+    }
     error.value = true
   } finally {
     loading.value = false
-    console.log('loadEntries: Finished loading, loading state:', loading.value, 'error state:', error.value)
   }
 }
 
@@ -495,19 +415,8 @@ function clearFilters() {
   loadEntries()
 }
 
-// Watch for changes in entries
-watch(entries, (newEntries, oldEntries) => {
-  console.log('entries watcher: Entries changed')
-  console.log('entries watcher: Old entries:', oldEntries)
-  console.log('entries watcher: New entries:', newEntries)
-  console.log('entries watcher: New entries length:', newEntries ? newEntries.length : 'N/A')
-})
-
 // Load data on component mount
 onMounted(() => {
-  console.log('HistoryList: Component mounted, calling loadEntries')
-  console.log('HistoryList: Auth token present:', !!cookieStorage.getItem('access_token'))
-  console.log('HistoryList: Refresh token present:', !!cookieStorage.getItem('refresh_token'))
   loadEntries()
 })
 </script>
