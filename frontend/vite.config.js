@@ -16,6 +16,7 @@ export default defineConfig({
   },
   define: {
     '__DEFINES__': JSON.stringify({}),
+    '__BASE__': JSON.stringify('/'),
     '__HMR_CONFIG_NAME__': JSON.stringify('default'),
     '__HMR_PROTOCOL__': JSON.stringify('ws'),
     '__HMR_HOSTNAME__': JSON.stringify(null),
