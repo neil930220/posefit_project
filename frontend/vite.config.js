@@ -4,15 +4,19 @@ import { resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: './',
+  base: '/',
   build: {
-    manifest: true,
+    manifest: false,
     outDir: resolve(__dirname, 'dist'),
     rollupOptions: {
       input: {
         main: resolve('./index.html'),
       }
     }
+  },
+  define: {
+    '__DEFINES__': JSON.stringify({}),
+    'process.env': {}
   },
   server: {
     https: false,   // disable HTTPS
