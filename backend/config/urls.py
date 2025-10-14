@@ -63,13 +63,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 #    This must come *after* static(). Otherwise it intercepts /media/ too.
-# Only serve the frontend SPA for non-API routes
 urlpatterns += [
-    re_path(r'^(?!api/).*$', FrontendAppView.as_view()),
+    re_path(r'^.*$', FrontendAppView.as_view()),
 ]
-
-# Alternative approach: explicit exclusion
-# urlpatterns += [
-#     re_path(r'^(?!api/|admin/|accounts/).*$', FrontendAppView.as_view()),
-# ]
 
