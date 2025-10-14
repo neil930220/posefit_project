@@ -297,8 +297,36 @@ async function authFetch(url, opts = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
   const res = await fetch(url, { ...opts, headers })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
+  if (!res.ok) {
+    // Try to get error details from response
+    let errorMessage = `HTTP ${res.status}`
+    try {
+      const contentType = res.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await res.json()
+        errorMessage = errorData.detail || errorData.message || errorMessage
+      } else {
+        // For non-JSON responses, try to get text
+        const text = await res.text()
+        if (text) {
+          errorMessage = `HTTP ${res.status}: ${text.substring(0, 100)}...`
+        }
+      }
+    } catch (e) {
+      // If we can't parse the error response, just use the status
+      console.warn('Could not parse error response:', e)
+    }
+    throw new Error(errorMessage)
+  }
+
+  // Check if response is JSON before parsing
+  const contentType = res.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    return res.json()
+  } else {
+    // For non-JSON responses, return the response object
+    return res
+  }
 }
 
 // Reactive data

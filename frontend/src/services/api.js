@@ -144,11 +144,7 @@ export async function doLogout() {
     const refresh = cookieStorage.getItem('refresh_token');
     if (refresh) {
       // blacklist the refresh token
-      await fetch('/api/token/blacklist/', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ refresh }),
-      });
+      await api.post('token/blacklist/', { refresh });
     }
   } catch (err) {
     console.error('Error blacklisting token:', err);
