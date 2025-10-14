@@ -293,7 +293,15 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { cookieStorage } from '../../utils/cookies'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/'
+// Normalize API base to always include /api/
+const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api/` : 'http://localhost:8000/api/')
+let API_BASE = RAW_API_BASE
+if (!/\/api\/?$/.test(API_BASE)) {
+  API_BASE = API_BASE.replace(/\/+$/, '') + '/api/'
+}
+if (!API_BASE.endsWith('/')) {
+  API_BASE = API_BASE + '/'
+}
 // --- helper to do fetch with JWT header ---
 async function authFetch(url, opts = {}) {
   const token = cookieStorage.getItem('access_token')
