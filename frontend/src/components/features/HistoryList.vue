@@ -112,7 +112,7 @@
     </div>
 
     <!-- Stats Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" v-if="entries.length > 0">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" v-if="Array.isArray(entries) && entries.length > 0">
       <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
         <div class="flex items-center justify-between">
           <div>
@@ -174,7 +174,7 @@
 
     <!-- Empty State -->
     <div
-      v-else-if="!entries.length && !error"
+      v-else-if="(!Array.isArray(entries) || !entries.length) && !error"
       class="text-center py-20"
     >
       <div class="max-w-md mx-auto">
@@ -308,11 +308,12 @@ const filters = ref({
 
 // Computed properties for stats
 const totalCalories = computed(() => {
+  if (!Array.isArray(entries.value)) return 0
   return entries.value.reduce((sum, entry) => sum + entry.total_calories, 0)
 })
 
 const averageCalories = computed(() => {
-  if (entries.value.length === 0) return 0
+  if (!Array.isArray(entries.value) || entries.value.length === 0) return 0
   return Math.round(totalCalories.value / entries.value.length)
 })
 
@@ -374,23 +375,29 @@ function buildQueryParams() {
 
 // Load entries from API
 async function loadEntries() {
-  console.log('loadEntries: Starting to load history entries')
   loading.value = true
   error.value = false
   try {
     const queryParams = buildQueryParams()
     const url = `history/entries/${queryParams ? '?' + queryParams : ''}`
-    console.log('loadEntries: API URL:', url)
 
     const response = await api.get(url)
-    console.log('loadEntries: Received', response.data.length, 'entries')
 
-    entries.value = response.data
-  } catch (e) {
-    console.error('loadEntries: API call failed:', e.message)
-    if (e.response) {
-      console.error('loadEntries: Error status:', e.response.status, 'data:', e.response.data)
+    let data = response.data
+    // Handle paginated responses (DRF returns {count, next, previous, results})
+    if (response.data && typeof response.data === 'object' && response.data.results) {
+      data = response.data.results
     }
+
+    // Ensure we have an array
+    if (!Array.isArray(data)) {
+      console.error('API returned non-array data:', data)
+      data = []
+    }
+
+    entries.value = data
+  } catch (e) {
+    console.error('Failed to load history entries:', e.message)
     error.value = true
   } finally {
     loading.value = false
