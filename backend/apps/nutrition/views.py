@@ -233,6 +233,8 @@ def calorie_progress_analytics(request):
     """Get calorie intake progress compared to BMR/TDEE"""
     date_range = request.GET.get('range', '7d')
     comparison_type = request.GET.get('type', 'tdee')  # 'bmr' or 'tdee'
+    if comparison_type not in {'bmr', 'tdee'}:
+        comparison_type = 'tdee'
     
     # Calculate date filtering
     end_date = get_current_date_in_timezone()
@@ -255,8 +257,30 @@ def calorie_progress_analytics(request):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    # Get target calorie value (BMR or TDEE)
-    target_calories = latest_weight_record.tdee if comparison_type == 'tdee' else latest_weight_record.bmr
+    # Get user profile for fallback calculations
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        profile = None
+
+    # Get target calorie value (BMR or TDEE) with fallback if missing on record
+    if comparison_type == 'tdee':
+        target_calories = latest_weight_record.tdee
+        if (target_calories is None or target_calories <= 0) and profile:
+            target_calories = profile.calculate_tdee(latest_weight_record.weight)
+    else:  # 'bmr'
+        target_calories = latest_weight_record.bmr
+        if (target_calories is None or target_calories <= 0) and profile:
+            target_calories = profile.calculate_bmr(latest_weight_record.weight)
+
+    # If still no valid target, return a helpful error
+    if target_calories is None or target_calories <= 0:
+        return Response(
+            {
+                'error': 'Unable to determine target calories. Please complete your profile (age, gender, height, activity level) and add a weight record.'
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
     # Get daily calorie intake data
     daily_data = []
