@@ -27,10 +27,19 @@ def signup(request):
 
         form = SignUpForm(data)
         if form.is_valid():
-            form.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True})
-            return redirect('login')
+            try:
+                form.save()
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True})
+                return redirect('login')
+            except Exception as e:
+                # Log the error for debugging
+                print(f"Error saving user: {e}")
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'error': '註冊失敗，請稍後再試'}, status=500)
+                # For non-AJAX requests, serve the frontend with error
+                file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'frontend', 'index.html')
+                return FileResponse(open(file_path, 'rb'))
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse(form.errors, status=400)

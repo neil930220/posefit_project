@@ -18,19 +18,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
     )
     phone = serializers.CharField(
-        required=True,
+        required=False,
+        allow_blank=True,
         error_messages={
-            'blank': '這個欄位不能留空',
-            'required': '這個欄位不能留空',
+            'invalid': '請輸入有效的電話號碼',
         }
     )
     birthday = serializers.DateField(
-        required=True,
+        required=False,
+        allow_null=True,
         input_formats=['%Y-%m-%d'],
         error_messages={
             'invalid': '請輸入正確的日期格式 (YYYY-MM-DD)',
-            'blank': '這個欄位不能留空',
-            'required': '這個欄位不能留空',
         }
     )
     password1 = serializers.CharField(
