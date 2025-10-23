@@ -48,6 +48,7 @@ urlpatterns = [
     path("history/", HistoryPageView.as_view(), name="history_page"),
     path("api/history/", include("apps.history.urls")),
     path('api/nutrition/', include('apps.nutrition.urls')),  # New nutrition API endpoints
+    path('api/exercise/', include('apps.exercise.urls')),  # Exercise and pose detection API endpoints
     path('api/token/',              TokenObtainPairView.as_view(),  name='token_obtain_pair'),
     path('api/token/refresh/',      TokenRefreshView.as_view(),     name='token_refresh'),
     # optional extra endpoints

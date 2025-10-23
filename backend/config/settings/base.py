@@ -45,6 +45,7 @@ LOCAL_APPS = [
     'apps.core',  # Renamed from index
     'apps.common',
     'apps.nutrition',  # New nutrition app for BMR/TDEE calculations
+    'apps.exercise',  # Exercise and pose detection app
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

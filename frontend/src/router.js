@@ -12,6 +12,7 @@ import features   from './components/pages/features.vue'
 import help   from './components/pages/help.vue'
 import about   from './components/pages/about.vue'
 import NutritionDashboard from './pages/NutritionDashboard.vue'
+import PostureTraining from './pages/PostureTraining.vue'
 import { cookieStorage } from './utils/cookies'
 
 const routes = [
@@ -40,6 +41,12 @@ const routes = [
     path: '/nutrition', 
     component: NutritionDashboard, 
     name: 'NutritionDashboard',
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/start/posture', 
+    component: PostureTraining, 
+    name: 'PostureTraining',
     meta: { requiresAuth: true }
   },
 ]
