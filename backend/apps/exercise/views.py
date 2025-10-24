@@ -8,7 +8,7 @@ import json
 import base64
 from io import BytesIO
 from PIL import Image
-from rest_framework import status, generics, permissions
+from rest_framework import status, generics, permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -35,7 +35,7 @@ class ExerciseTypeListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
-class ExerciseSessionViewSet(generics.ModelViewSet):
+class ExerciseSessionViewSet(viewsets.ModelViewSet):
     """運動訓練記錄管理"""
     serializer_class = ExerciseSessionSerializer
     permission_classes = [permissions.IsAuthenticated]
