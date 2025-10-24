@@ -120,20 +120,23 @@
             <h2 class="text-2xl font-semibold text-white">預測結果</h2>
           </div>
           <div class="p-6">
-            <ul class="space-y-4 text-gray-200">
-              <li class="flex justify-between text-lg">
-                <span>類別</span>
-                <span class="font-medium">{{ result.prediction }}</span>
-        </li>
-              <li class="flex justify-between text-lg">
-                <span>信心分數</span>
-                <span class="font-medium">{{ result.confidence }}</span>
-        </li>
-              <li class="flex justify-between text-lg">
+            <h3 class="text-lg font-semibold text-gray-200 mb-3">檢測到的食物</h3>
+            <div class="space-y-2 mb-4">
+              <div 
+                v-for="pred in result.predictions" 
+                :key="pred.name"
+                class="flex justify-between text-gray-200 text-lg"
+              >
+                <span>{{ pred.name }}</span>
+                <span class="font-medium">{{ (pred.confidence * 100).toFixed(1) }}%</span>
+              </div>
+            </div>
+            <div class="pt-4 border-t border-gray-600">
+              <div class="flex justify-between text-gray-200 text-lg">
                 <span>食物面積比</span>
                 <span class="font-medium">{{ result.ratio }}</span>
-        </li>
-      </ul>
+              </div>
+            </div>
           </div>
     </div>
 
@@ -278,14 +281,20 @@ async function saveHistory() {
 
   const formData = new FormData()
   formData.append('image', file.value)
-  formData.append('detections', JSON.stringify([{
-    item: result.value.prediction,
+  
+  // Map all detected foods with nutrition totals
+  const detections = result.value.predictions.map(p => ({
+    item: p.name,
+    confidence: p.confidence,
+    // Total nutrition (shared across all items)
     calories: result.value.nutrition.calories,
     carbs: result.value.nutrition.carbs,
     protein: result.value.nutrition.protein,
     fat: result.value.nutrition.fat
-  }]))
-  formData.append('total_calories', result.value.nutrition.calories)
+  }))
+  
+  formData.append('detections', JSON.stringify(detections))
+  formData.append('total_calories', result.value.total_calories || 0)
 
   try {
     await api.post('/api/history/entries/', formData, {

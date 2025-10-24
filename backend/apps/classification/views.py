@@ -1,21 +1,24 @@
 # app/classify/api.py
 
 from PIL import Image
-import torch, cv2, numpy as np, re
-from torchvision import transforms
-from torchvision import models
+import cv2, numpy as np, re
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 import google.generativeai as genai
-import os, json
+import os, json, sys
 from rest_framework.permissions import AllowAny 
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
+
+# Add ml_models to path
+sys.path.insert(0, os.path.join(settings.BASE_DIR, 'ml_models'))
+
+from ml_models.food_classifier import get_foodseg103_classifier
 
 # ── Load your model + pipeline once ──
 
@@ -23,24 +26,8 @@ from django.http import JsonResponse
 genai.configure(api_key=os.getenv("GENAI_API_KEY"))
 gmodel = genai.GenerativeModel(model_name="gemini-2.0-flash")
 
-# 2) Torch device + model
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = models.mobilenet_v2(pretrained=False)
-model.classifier[1] = torch.nn.Linear(model.last_channel, 101)
-state = torch.load(
-    os.path.join(settings.BASE_DIR, "ml_models", "models", "TW_Food101_MobileNetV2.pt"),
-    map_location=device
-)
-model.load_state_dict(state)
-model.to(device).eval()
-
-# 3) Transform + class names
-transform = transforms.Compose([
-    transforms.Resize((224,224)),
-    transforms.ToTensor(),
-])
-with open(os.path.join(settings.BASE_DIR, "ml_models", "models", "class_names.json")) as f:
-    class_names = json.load(f)
+# 2) Load FoodSeg103 classifier
+classifier = get_foodseg103_classifier()
 
 # ── The single combined endpoint ──
 
@@ -56,17 +43,14 @@ class UploadAndAnalyze(APIView):
 
         # 1) Load image
         img = Image.open(file_obj).convert("RGB")
-        inp = transform(img).unsqueeze(0).to(device)
 
-        # 2) Classification
-        with torch.no_grad():
-            logits = model(inp)
-            probs  = torch.softmax(logits, dim=1)
-            idx    = probs.argmax(dim=1).item()
-            label  = class_names[idx].replace("_", " ")
-            conf   = probs[0, idx].item()
+        # 2) Multi-label Classification with FoodSeg103
+        predictions = classifier.predict(img, threshold=0.8)
+        
+        if not predictions:
+            return JsonResponse({'error': True, 'message': 'No food items detected'})
 
-        # 3) Area ratio
+        # 3) Area ratio (for overall food area)
         arr   = np.array(img)[:,:,::-1]
         gray  = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
         blur  = cv2.GaussianBlur(gray, (5,5), 0)
@@ -75,13 +59,22 @@ class UploadAndAnalyze(APIView):
         food_area  = max((cv2.contourArea(c) for c in ctrs), default=0)
         image_area = arr.shape[0] * arr.shape[1]
         ratio      = food_area / image_area
-        print(conf)
-        if conf > 0.90 :     
-            # 4) Gemini calorie guess
+        
+        # Get top prediction confidence
+        top_confidence = predictions[0]['confidence']
+        print(f"Top prediction: {predictions[0]['name']} ({top_confidence:.2%})")
+        
+        # Only proceed if we have reasonable confidence
+        if top_confidence > 0.7:
+            # 4) Format food names for Gemini
+            food_names = [p['name'] for p in predictions]
+            food_list_str = "、".join(food_names)
+            
+            # Gemini nutrition analysis for combined foods
             desc = (
-                f"這張圖片中的食物預測為「{label}」，"
-                f"其主要物體約佔整張圖片的 {ratio:.1%}。"
-                "請依據這些資訊提供以下營養資訊，請使用以下格式回覆："
+                f"這張圖片中檢測到以下食物：「{food_list_str}」，"
+                f"食物約佔整張圖片的 {ratio:.1%}。"
+                "請依據這些食物提供整體的營養資訊（所有檢測到的食物的總和），請使用以下格式回覆："
                 "熱量: [數字] 大卡\n"
                 "碳水化合物: [數字] 克\n"
                 "蛋白質: [數字] 克\n"
@@ -100,24 +93,31 @@ class UploadAndAnalyze(APIView):
 
             # Extract calories
             calories_str = nutrition_data.get('熱量', '0 大卡')
-            est_cal = int(re.search(r'(\d+)', calories_str).group(1))
+            calories_match = re.search(r'(\d+)', calories_str)
+            est_cal = int(calories_match.group(1)) if calories_match else 0
+
+            # Extract other nutrition values with safe regex
+            def safe_extract_float(key, default='0'):
+                value_str = nutrition_data.get(key, default)
+                match = re.search(r'(\d+\.?\d*)', value_str)
+                return float(match.group(1)) if match else 0.0
 
             # Build JSON response
             result_data = {
-                'prediction': label,
-                'confidence': f"{conf:.2%}",
+                'predictions': predictions,
                 'ratio': f"{ratio:.2%}",
                 'gemini': gemini_resp,
                 'nutrition': {
                     'calories': est_cal,
-                    'carbs': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('碳水化合物', '0')).group(1)),
-                    'protein': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('蛋白質', '0')).group(1)),
-                    'fat': float(re.search(r'(\d+\.?\d*)', nutrition_data.get('脂肪', '0')).group(1)),
+                    'carbs': safe_extract_float('碳水化合物'),
+                    'protein': safe_extract_float('蛋白質'),
+                    'fat': safe_extract_float('脂肪'),
                     'vitamins': nutrition_data.get('維生素', ''),
                     'minerals': nutrition_data.get('礦物質', '')
                 },
                 'total_calories': est_cal,
             }
             return Response(result_data, status=status.HTTP_200_OK)
-        return JsonResponse({'error': True})
+        
+        return JsonResponse({'error': True, 'message': 'Low confidence detection'})
 

@@ -237,7 +237,9 @@
                 class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
               >
                 {{ detection.item }}
-                <span class="ml-1 text-blue-600">({{ detection.calories }}卡)</span>
+                <span v-if="detection.confidence" class="ml-1 text-blue-600">
+                  ({{ (detection.confidence * 100).toFixed(0) }}%)
+                </span>
               </span>
             </div>
           </div>
