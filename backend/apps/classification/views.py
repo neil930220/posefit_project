@@ -75,7 +75,7 @@ class UploadAndAnalyze(APIView):
         print(f"Top prediction: {predictions[0]['name']} ({top_confidence:.2%})")
         
         # Only proceed if we have reasonable confidence (0 for testing)
-        if top_confidence > 0.0:
+        if top_confidence > 0.70:
             # 4) Format food names for Gemini
             food_names = [p['name'] for p in predictions]
             food_list_str = "、".join(food_names)
