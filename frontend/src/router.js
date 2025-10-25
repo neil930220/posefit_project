@@ -1,6 +1,7 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import Upload from './pages/upload.vue'
+import ClassifyWizard from './pages/ClassifyWizard.vue'
 import SignupForm from './components/auth/SignupForm.vue'
 import LoginForm from './components/auth/LoginForm.vue'
 import Home    from './pages/Home.vue'
@@ -33,7 +34,7 @@ const routes = [
   { path: '/forgot-password',name: 'ForgotPassword',component: ForgotPassword},
   { path: '/reset-password/:uid/:token',name: 'ResetPassword',component: ResetPassword,props: true},
   { path: '/start',component: StartLayout,},
-  { path: '/classify',component: Upload,name:'Upload'},
+  { path: '/classify',component: ClassifyWizard,name:'Upload'},
   { path: '/features',component: features,name:'features'},
   { path: '/help',component: help,name:'help'},
   { path: '/about',component: about,name:'about'},
