@@ -285,19 +285,33 @@ class FoodSeg103Classifier:
         # Convert PIL to numpy (RGB format, 0-255)
         img = np.array(image, dtype=np.float32)
         
-        # Resize keeping aspect ratio (max side = 2049 like in config)
+        # Resize keeping aspect ratio to fit within 768x768
         h, w = img.shape[:2]
-        max_size = 2049
-        scale = min(max_size / max(h, w), 1.0)
+        target_size = 768
+        scale = min(target_size / h, target_size / w)
         if scale < 1.0:
             new_h, new_w = int(h * scale), int(w * scale)
             img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+        else:
+            new_h, new_w = h, w
         
         # Normalize in 0-255 range (mmseg style)
         # img = (img - mean) / std
         mean = self.img_norm_cfg['mean'].numpy()
         std = self.img_norm_cfg['std'].numpy()
         img = (img - mean) / std
+        
+        # Pad to 768x768 (center padding)
+        pad_h = target_size - new_h
+        pad_w = target_size - new_w
+        top = pad_h // 2
+        bottom = pad_h - top
+        left = pad_w // 2
+        right = pad_w - left
+        
+        # Pad with zeros (will be normalized, so use mean values for padding)
+        img = cv2.copyMakeBorder(img, top, bottom, left, right, 
+                                 cv2.BORDER_CONSTANT, value=(0, 0, 0))
         
         # Convert to tensor and adjust dimensions: HWC -> CHW
         img = torch.from_numpy(img).permute(2, 0, 1).float()
