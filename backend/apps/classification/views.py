@@ -44,8 +44,9 @@ class UploadAndAnalyze(APIView):
         # 1) Load image
         img = Image.open(file_obj).convert("RGB")
 
-        # 2) Multi-label Classification with FoodSeg103
-        predictions = classifier.predict(img, threshold=0.8)
+        # 2) Multi-label Classification with FoodSeg103 SETR-MLA
+        # Note: SETR-MLA uses lower thresholds (0.2-0.3) due to segmentation-based classification
+        predictions = classifier.predict(img, threshold=0.2)
         
         if not predictions:
             return JsonResponse({'error': True, 'message': 'No food items detected'})
