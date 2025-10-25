@@ -6,17 +6,33 @@ This file contains settings common to all environments.
 from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv, find_dotenv
-
-# Load environment variables
-dotenv_path = find_dotenv()
-if not dotenv_path:
-    print("⚠️  Warning: .env file not found. Some configurations may be missing.")
-else:
-    load_dotenv(dotenv_path)
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Load environment variables strictly from project .env (avoid scanning parent dirs)
+project_dotenv = BASE_DIR / ".env"
+if project_dotenv.exists():
+    encodings_to_try = [
+        "utf-8",
+        "utf-8-sig",
+        "utf-16",
+        "utf-16-le",
+        "utf-16-be",
+    ]
+    loaded = False
+    for enc in encodings_to_try:
+        try:
+            load_dotenv(project_dotenv, encoding=enc)
+            loaded = True
+            break
+        except UnicodeDecodeError:
+            continue
+    if not loaded:
+        print(f"⚠️  Warning: Failed to read {project_dotenv} with common encodings. Environment variables may be missing.")
+else:
+    print(f"⚠️  Warning: .env file not found at {project_dotenv}. Some configurations may be missing.")
 
 # Application definition
 DJANGO_APPS = [
