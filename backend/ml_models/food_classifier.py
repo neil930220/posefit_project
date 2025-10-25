@@ -190,6 +190,7 @@ class FoodSeg103Classifier:
             )
             
             # Load checkpoint with compatibility for PyTorch 2.6 weights_only default
+            print(f"Loading checkpoint from: {self.model_path}")
             try:
                 checkpoint = torch.load(self.model_path, map_location=self.device)
             except Exception as e:
@@ -202,6 +203,26 @@ class FoodSeg103Classifier:
                     raise e
                 except Exception:
                     raise
+            
+            # Validate checkpoint type
+            if 'state_dict' in checkpoint:
+                state_dict_raw = checkpoint['state_dict']
+            else:
+                state_dict_raw = checkpoint
+            
+            # Check if this is the correct checkpoint type
+            first_keys = list(state_dict_raw.keys())[:5]
+            print(f"Checkpoint first 5 keys: {first_keys}")
+            
+            # Detect if this is a Swin checkpoint (wrong model!)
+            if any('swin' in k.lower() for k in first_keys):
+                raise ValueError(
+                    f"❌ ERROR: The checkpoint at {self.model_path} is a Swin Transformer model!\n"
+                    f"   Expected: SETR-MLA checkpoint (should have 'backbone.blocks.*' or 'backbone.patch_embed.*')\n"
+                    f"   Found: Swin model checkpoint (has 'swin.features.*')\n"
+                    f"   This is likely the old foodseg103_swin_best.pth file.\n"
+                    f"   Please ensure foodseg103_setr_iter_80000.pth is the correct SETR-MLA checkpoint."
+                )
             
             # Convert mmseg checkpoint format
             state_dict = convert_mmseg_checkpoint(checkpoint)
