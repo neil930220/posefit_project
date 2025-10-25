@@ -10,6 +10,58 @@ import timm
 from collections import OrderedDict
 
 
+class ChannelAttention(nn.Module):
+    """Channel Attention Module (part of CBAM)."""
+    
+    def __init__(self, channels, reduction=16):
+        super().__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        
+        self.fc = nn.Sequential(
+            nn.Conv2d(channels, channels // reduction, 1, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels // reduction, channels, 1, bias=False)
+        )
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, x):
+        avg_out = self.fc(self.avg_pool(x))
+        max_out = self.fc(self.max_pool(x))
+        out = avg_out + max_out
+        return self.sigmoid(out)
+
+
+class SpatialAttention(nn.Module):
+    """Spatial Attention Module (part of CBAM)."""
+    
+    def __init__(self, kernel_size=7):
+        super().__init__()
+        self.conv = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, x):
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        x_cat = torch.cat([avg_out, max_out], dim=1)
+        out = self.conv(x_cat)
+        return self.sigmoid(out)
+
+
+class CBAM(nn.Module):
+    """Convolutional Block Attention Module."""
+    
+    def __init__(self, channels, reduction=16, kernel_size=7):
+        super().__init__()
+        self.channel_attention = ChannelAttention(channels, reduction)
+        self.spatial_attention = SpatialAttention(kernel_size)
+    
+    def forward(self, x):
+        out = x * self.channel_attention(x)
+        out = out * self.spatial_attention(out)
+        return out
+
+
 class ResNet50MultiLabel(nn.Module):
     """
     ResNet-50 model for multi-label classification.
@@ -50,6 +102,85 @@ class ResNet50MultiLabel(nn.Module):
             Logits [batch_size, num_classes]
         """
         return self.resnet(x)
+
+
+class AttentionResNet50(nn.Module):
+    """
+    ResNet-50 with CBAM attention mechanism for multi-label classification.
+    This model adds attention modules after each residual block for improved feature learning.
+    """
+    
+    def __init__(self, num_classes=103, pretrained=True, dropout=0.3):
+        """
+        Args:
+            num_classes: Number of output classes
+            pretrained: If True, use pretrained ResNet-50 weights
+            dropout: Dropout probability for regularization
+        """
+        super(AttentionResNet50, self).__init__()
+        
+        # Load pretrained ResNet-50
+        resnet = models.resnet50(pretrained=pretrained)
+        
+        # Extract layers
+        self.conv1 = resnet.conv1
+        self.bn1 = resnet.bn1
+        self.relu = resnet.relu
+        self.maxpool = resnet.maxpool
+        
+        # Residual blocks
+        self.layer1 = resnet.layer1
+        self.layer2 = resnet.layer2
+        self.layer3 = resnet.layer3
+        self.layer4 = resnet.layer4
+        
+        # Add CBAM attention modules after each layer
+        self.attention1 = CBAM(256)
+        self.attention2 = CBAM(512)
+        self.attention3 = CBAM(1024)
+        self.attention4 = CBAM(2048)
+        
+        self.avgpool = resnet.avgpool
+        
+        # Improved classifier head with BatchNorm
+        num_features = 2048
+        self.classifier = nn.Sequential(
+            nn.Dropout(p=dropout),
+            nn.Linear(num_features, 512),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(512),
+            nn.Dropout(p=dropout),
+            nn.Linear(512, num_classes)
+        )
+        
+        self.num_classes = num_classes
+    
+    def forward(self, x):
+        # Initial layers
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+        
+        # Residual blocks with attention
+        x = self.layer1(x)
+        x = self.attention1(x)
+        
+        x = self.layer2(x)
+        x = self.attention2(x)
+        
+        x = self.layer3(x)
+        x = self.attention3(x)
+        
+        x = self.layer4(x)
+        x = self.attention4(x)
+        
+        # Global pooling and classifier
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        
+        return x
     
     def predict(self, x, threshold=0.5):
         """
@@ -474,7 +605,7 @@ def create_model(model_name='resnet50', num_classes=103, pretrained=True, dropou
     Factory function to create models.
     
     Args:
-        model_name: Name of the model ('resnet50', 'efficientnet', 'swin', or 'setr_mla')
+        model_name: Name of the model ('resnet50', 'resnet50_attention', 'efficientnet', 'swin', or 'setr_mla')
         num_classes: Number of output classes
         pretrained: If True, use pretrained weights
         dropout: Dropout probability
@@ -485,6 +616,8 @@ def create_model(model_name='resnet50', num_classes=103, pretrained=True, dropou
     """
     if model_name.lower() == 'resnet50':
         return ResNet50MultiLabel(num_classes, pretrained, dropout)
+    elif model_name.lower() in ['resnet50_attention', 'attention_resnet50', 'resnet50_cbam']:
+        return AttentionResNet50(num_classes, pretrained, dropout)
     elif model_name.lower() == 'efficientnet':
         return EfficientNetMultiLabel(num_classes, pretrained, dropout)
     elif model_name.lower() == 'swin':

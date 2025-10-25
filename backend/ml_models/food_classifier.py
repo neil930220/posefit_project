@@ -138,7 +138,7 @@ class FoodClassifier:
 
 class FoodSeg103Classifier:
     """
-    Multi-label food classification using FoodSeg103 SETR-MLA model.
+    Multi-label food classification using FoodSeg103 ResNet50 with CBAM Attention.
     """
     
     def __init__(self, model_path=None, class_names_path=None, threshold=0.3):
@@ -148,24 +148,23 @@ class FoodSeg103Classifier:
         Args:
             model_path (str): Path to the trained model checkpoint
             class_names_path (str): Path to the class mapping JSON file
-            threshold (float): Classification threshold (lower for segmentation-based classification)
+            threshold (float): Classification threshold for multi-label prediction
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = None
         self.class_names = {}
         self.threshold = threshold
         
-        # Default paths - using Swin Transformer (trained on FoodSeg103)
-        # Note: SETR iter_80000.pth was trained on Recipe1M, not FoodSeg103!
+        # Default paths - using ResNet50 with CBAM Attention (trained on FoodSeg103)
         if model_path is None:
-            model_path = Path(__file__).parent / 'models' / 'foodseg103_swin_best.pth'
+            model_path = Path(__file__).parent / 'models' / 'foodseg103_resnet50_attention.pth'
         if class_names_path is None:
             class_names_path = Path(__file__).parent / 'models' / 'foodseg103_classes.json'
             
         self.model_path = model_path
         self.class_names_path = class_names_path
         
-        # Image preprocessing transforms (same as training)
+        # Image preprocessing transforms (ImageNet normalization, same as training)
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
@@ -177,18 +176,20 @@ class FoodSeg103Classifier:
         self.load_class_names()
     
     def load_model(self):
-        """Load the trained Swin Transformer model from checkpoint."""
+        """Load the trained ResNet50 with CBAM Attention model from checkpoint."""
         try:
             from .foodseg103_model import create_model
             
-            # Create model architecture
+            # Create model architecture (ResNet50 with CBAM Attention)
             self.model = create_model(
-                model_name='swin',
+                model_name='resnet50_attention',
                 num_classes=103,
-                pretrained=False
+                pretrained=False,
+                dropout=0.3  # Same dropout as training
             )
             
             # Load checkpoint with compatibility for PyTorch 2.6 weights_only default
+            print(f"Loading checkpoint from: {self.model_path}")
             try:
                 checkpoint = torch.load(self.model_path, map_location=self.device)
             except Exception as e:
@@ -201,13 +202,21 @@ class FoodSeg103Classifier:
                     raise e
                 except Exception:
                     raise
+            
+            # Load model state dict
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.model = self.model.to(self.device)
             self.model.eval()
             
-            print(f"FoodSeg103 model loaded successfully from {self.model_path}")
+            # Print checkpoint info if available
+            if 'epoch' in checkpoint:
+                print(f"Loaded model trained for {checkpoint['epoch']} epochs")
+            if 'best_mAP' in checkpoint:
+                print(f"Model best mAP: {checkpoint['best_mAP']:.4f}")
+            
+            print(f"FoodSeg103 ResNet50+Attention model loaded successfully from {self.model_path}")
         except Exception as e:
-            print(f"Error loading SETR-MLA model: {e}")
+            print(f"Error loading ResNet50 Attention model: {e}")
             import traceback
             traceback.print_exc()
             raise
