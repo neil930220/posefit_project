@@ -31,8 +31,7 @@ COPY . /app/
 
 # 下載大型模型檔（在建置階段將模型打包進映像）
 RUN mkdir -p /app/backend/ml_models/models && \
-    gdown "https://drive.google.com/uc?id=18SrYVEq0pEqNiZmd4kX95KwXD7zhb6Vi" -O /app/backend/ml_models/models/foodseg103_swin_best.pth
-
+    gdown "https://drive.google.com/uc?id=18SrYVEq0pEqNiZmd4kX95KwXD7zhb6Vi" -O /app/backend/ml_models/models/foodseg103_setr_iter_80000.pth
 # 設定環境變數
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=config.settings.production
