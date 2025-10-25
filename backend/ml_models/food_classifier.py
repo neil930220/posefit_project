@@ -155,41 +155,40 @@ class FoodSeg103Classifier:
         self.class_names = {}
         self.threshold = threshold
         
-        # Default paths - now using SETR_MLA model
+        # Default paths - using Swin Transformer (trained on FoodSeg103)
+        # Note: SETR iter_80000.pth was trained on Recipe1M, not FoodSeg103!
         if model_path is None:
-            model_path = Path(__file__).parent / 'models' / 'foodseg103_setr_iter_80000.pth'
+            model_path = Path(__file__).parent / 'models' / 'foodseg103_swin_best.pth'
         if class_names_path is None:
             class_names_path = Path(__file__).parent / 'models' / 'foodseg103_classes.json'
             
         self.model_path = model_path
         self.class_names_path = class_names_path
         
-        # Image preprocessing transforms for SETR-MLA
-        # Following mmseg's preprocessing: normalize in 0-255 range, THEN convert to tensor
-        # This matches the training/testing pipeline exactly
-        self.img_norm_cfg = {
-            'mean': torch.tensor([123.675, 116.28, 103.53]),
-            'std': torch.tensor([58.395, 57.12, 57.375])
-        }
+        # Image preprocessing transforms (same as training)
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                               std=[0.229, 0.224, 0.225])
+        ])
         
         self.load_model()
         self.load_class_names()
     
     def load_model(self):
-        """Load the trained SETR-MLA model from checkpoint."""
+        """Load the trained Swin Transformer model from checkpoint."""
         try:
-            from .foodseg103_model import create_model, convert_mmseg_checkpoint
+            from .foodseg103_model import create_model
             
-            # Create SETR-MLA model architecture (104 classes including background)
+            # Create model architecture
             self.model = create_model(
-                model_name='setr_mla',
-                num_classes=104,
-                pretrained=False,
-                img_size=768
+                model_name='swin',
+                num_classes=103,
+                pretrained=False
             )
             
             # Load checkpoint with compatibility for PyTorch 2.6 weights_only default
-            print(f"Loading checkpoint from: {self.model_path}")
             try:
                 checkpoint = torch.load(self.model_path, map_location=self.device)
             except Exception as e:
@@ -202,54 +201,11 @@ class FoodSeg103Classifier:
                     raise e
                 except Exception:
                     raise
-            
-            # Validate checkpoint type
-            if 'state_dict' in checkpoint:
-                state_dict_raw = checkpoint['state_dict']
-            else:
-                state_dict_raw = checkpoint
-            
-            # Check if this is the correct checkpoint type
-            first_keys = list(state_dict_raw.keys())[:5]
-            print(f"Checkpoint first 5 keys: {first_keys}")
-            
-            # Detect if this is a Swin checkpoint (wrong model!)
-            if any('swin' in k.lower() for k in first_keys):
-                raise ValueError(
-                    f"❌ ERROR: The checkpoint at {self.model_path} is a Swin Transformer model!\n"
-                    f"   Expected: SETR-MLA checkpoint (should have 'backbone.blocks.*' or 'backbone.patch_embed.*')\n"
-                    f"   Found: Swin model checkpoint (has 'swin.features.*')\n"
-                    f"   This is likely the old foodseg103_swin_best.pth file.\n"
-                    f"   Please ensure foodseg103_setr_iter_80000.pth is the correct SETR-MLA checkpoint."
-                )
-            
-            # Convert mmseg checkpoint format
-            state_dict = convert_mmseg_checkpoint(checkpoint)
-            
-            # Try to load with strict=False to handle any key mismatches
-            missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
-            
-            if missing_keys:
-                print(f"\nWarning: Missing keys in checkpoint: {len(missing_keys)} keys")
-                print(f"  First 5 missing keys: {missing_keys[:5]}")
-                if len(missing_keys) > 100:
-                    print(f"  ⚠️  WARNING: Too many missing keys ({len(missing_keys)})! Model may not work properly.")
-            if unexpected_keys:
-                print(f"\nWarning: Unexpected keys in checkpoint: {len(unexpected_keys)} keys")
-                print(f"  First 5 unexpected keys: {unexpected_keys[:5]}")
-            
-            # Count loaded parameters
-            total_params = sum(p.numel() for p in self.model.parameters())
-            print(f"\nModel statistics:")
-            print(f"  Total parameters: {total_params:,}")
-            print(f"  Successfully loaded: {len(state_dict) - len(unexpected_keys)} keys")
-            print(f"  Missing: {len(missing_keys)} keys")
-            print(f"  Load success rate: {(len(state_dict) - len(unexpected_keys)) / (len(state_dict) - len(unexpected_keys) + len(missing_keys)) * 100:.1f}%")
-            
+            self.model.load_state_dict(checkpoint['model_state_dict'])
             self.model = self.model.to(self.device)
             self.model.eval()
             
-            print(f"SETR-MLA model loaded successfully from {self.model_path}")
+            print(f"FoodSeg103 model loaded successfully from {self.model_path}")
         except Exception as e:
             print(f"Error loading SETR-MLA model: {e}")
             import traceback
@@ -268,13 +224,13 @@ class FoodSeg103Classifier:
     
     def preprocess_image(self, image):
         """
-        Preprocess image for SETR-MLA model following mmseg pipeline.
+        Preprocess image for model input.
         
         Args:
             image: PIL Image or image path
             
         Returns:
-            torch.Tensor: Preprocessed image tensor [1, 3, H, W]
+            torch.Tensor: Preprocessed image tensor
         """
         if isinstance(image, str):
             image = Image.open(image).convert('RGB')
@@ -282,41 +238,7 @@ class FoodSeg103Classifier:
             # Handle file-like objects
             image = Image.open(image).convert('RGB')
         
-        # Convert PIL to numpy (RGB format, 0-255)
-        img = np.array(image, dtype=np.float32)
-        
-        # Resize keeping aspect ratio to fit within 768x768
-        h, w = img.shape[:2]
-        target_size = 768
-        scale = min(target_size / h, target_size / w)
-        if scale < 1.0:
-            new_h, new_w = int(h * scale), int(w * scale)
-            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-        else:
-            new_h, new_w = h, w
-        
-        # Normalize in 0-255 range (mmseg style)
-        # img = (img - mean) / std
-        mean = self.img_norm_cfg['mean'].numpy()
-        std = self.img_norm_cfg['std'].numpy()
-        img = (img - mean) / std
-        
-        # Pad to 768x768 (center padding)
-        pad_h = target_size - new_h
-        pad_w = target_size - new_w
-        top = pad_h // 2
-        bottom = pad_h - top
-        left = pad_w // 2
-        right = pad_w - left
-        
-        # Pad with zeros (will be normalized, so use mean values for padding)
-        img = cv2.copyMakeBorder(img, top, bottom, left, right, 
-                                 cv2.BORDER_CONSTANT, value=(0, 0, 0))
-        
-        # Convert to tensor and adjust dimensions: HWC -> CHW
-        img = torch.from_numpy(img).permute(2, 0, 1).float()
-        
-        return img.unsqueeze(0).to(self.device)
+        return self.transform(image).unsqueeze(0).to(self.device)
     
     def predict(self, image, threshold=None):
         """
@@ -338,42 +260,26 @@ class FoodSeg103Classifier:
         # Preprocess image
         input_tensor = self.preprocess_image(image)
         
-        # Make prediction using SETR's multilabel prediction
+        # Make prediction
         with torch.no_grad():
-            probabilities = self.model.predict_multilabel(input_tensor).cpu().squeeze(0)
-        
-        # Debug: Log probability statistics
-        max_prob = probabilities.max().item()
-        mean_prob = probabilities.mean().item()
-        print(f"[SETR-MLA] Max probability: {max_prob:.4f}, Mean probability: {mean_prob:.4f}")
-        
-        # Get top 10 probabilities for debugging
-        top_probs, top_indices = torch.topk(probabilities, min(10, len(probabilities)))
-        print(f"[SETR-MLA] Top 10 probabilities:")
-        for i in range(min(10, len(top_probs))):
-            idx = top_indices[i].item()
-            prob = top_probs[i].item()
-            class_id = str(idx)
-            class_name = self.class_names.get(class_id, f"class_{class_id}")
-            print(f"  {i+1}. {class_name} (class {idx}): {prob:.4f}")
+            outputs = self.model(input_tensor)
+            probabilities = torch.sigmoid(outputs).cpu().squeeze(0)
         
         # Get predictions above threshold
         predictions = []
         for idx in range(len(probabilities)):
             prob = probabilities[idx].item()
             if prob >= threshold:
-                # Class IDs: 0 is background, 1-103 are food classes
-                if idx == 0:  # Skip background class
-                    continue
-                class_id = str(idx)  # Map to class ID in JSON (1-103)
+                class_id = str(idx + 1)  # Class IDs start at 1 (0 is background)
                 class_name = self.class_names.get(class_id, f"class_{class_id}")
                 
-                predictions.append({
-                    'name': class_name,
-                    'confidence': prob
-                })
+                # Skip background class
+                if class_name != "background":
+                    predictions.append({
+                        'name': class_name,
+                        'confidence': prob
+                    })
         
-        print(f"[SETR-MLA] Found {len(predictions)} predictions above threshold {threshold}")
         
         # Sort by confidence (highest first)
         predictions.sort(key=lambda x: x['confidence'], reverse=True)

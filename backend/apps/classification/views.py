@@ -44,10 +44,9 @@ class UploadAndAnalyze(APIView):
         # 1) Load image
         img = Image.open(file_obj).convert("RGB")
 
-        # 2) Multi-label Classification with FoodSeg103 SETR-MLA
-        # Note: SETR-MLA uses lower thresholds due to segmentation-based classification
-        # Lowered to 0.15 for better detection (adjust based on testing)
-        predictions = classifier.predict(img, threshold=0.15)
+        # 2) Multi-label Classification with FoodSeg103 Swin Transformer
+        # Using threshold 0.7 for good balance between precision and recall
+        predictions = classifier.predict(img, threshold=0.7)
         
         # Debug logging
         print(f"[DEBUG] Predictions count: {len(predictions)}")
