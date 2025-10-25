@@ -126,9 +126,22 @@
           <div class="bg-[#2a2b2c] rounded-xl shadow-lg p-6 flex-1">
             <h2 class="text-2xl font-semibold text-white mb-4">預測結果</h2>
             <div v-if="result">
+              <div class="mb-4">
+                <label class="block text-sm text-gray-300 mb-2">顯示門檻（信心百分比）: <span class="font-semibold">{{ confidenceThreshold }}%</span></label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  v-model.number="confidenceThreshold"
+                  class="w-full"
+                />
+                <div v-if="hiddenCount > 0" class="mt-1 text-xs text-gray-400">已隱藏 {{ hiddenCount }} 項低於門檻的分類</div>
+              </div>
               <h3 class="text-lg font-semibold text-gray-200 mb-3">檢測到的食物</h3>
               <div class="space-y-2 mb-4">
-                <div v-for="pred in result.predictions" :key="pred.name" class="flex justify-between text-gray-200 text-lg">
+                <div v-if="filteredPredictions.length === 0" class="text-gray-400">目前門檻下沒有項目</div>
+                <div v-for="pred in filteredPredictions" :key="pred.name" class="flex justify-between text-gray-200 text-lg">
                   <span>{{ pred.name }}</span>
                   <span class="font-medium">{{ (pred.confidence * 100).toFixed(1) }}%</span>
                 </div>
@@ -193,6 +206,7 @@ const result = ref(null)
 const isDragging = ref(false)
 const imageInput = ref(null)
 const error = ref(null)
+const confidenceThreshold = ref(50)
 
 const progressWidth = computed(() => {
   if (step.value === 1) return '33%'
@@ -242,6 +256,17 @@ const chartOptions = {
   },
   cutout: '70%'
 }
+
+const filteredPredictions = computed(() => {
+  const preds = result.value?.predictions || []
+  const th = (confidenceThreshold.value || 0) / 100
+  return preds.filter(p => (p.confidence || 0) >= th)
+})
+
+const hiddenCount = computed(() => {
+  const total = result.value?.predictions?.length || 0
+  return Math.max(0, total - filteredPredictions.value.length)
+})
 
 function onDragOver() { isDragging.value = true }
 function onDragLeave() { isDragging.value = false }

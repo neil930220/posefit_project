@@ -92,14 +92,21 @@ class UploadAndAnalyze(APIView):
                 "維生素: [簡短描述主要維生素]\n"
                 "礦物質: [簡短描述主要礦物質]"
             )
-            gemini_resp = gmodel.generate_content(desc).text
+            # Gemini request with safe fallback
+            try:
+                gemini_raw = gmodel.generate_content(desc)
+                gemini_resp = getattr(gemini_raw, 'text', '') or ''
+            except Exception as e:
+                print(f"[WARN] Gemini analysis failed: {e}")
+                gemini_resp = ''
             
             # Parse the structured response
             nutrition_data = {}
-            for line in gemini_resp.split('\n'):
-                if ':' in line:
-                    key, value = line.split(':', 1)
-                    nutrition_data[key.strip()] = value.strip()
+            if gemini_resp:
+                for line in gemini_resp.split('\n'):
+                    if ':' in line:
+                        key, value = line.split(':', 1)
+                        nutrition_data[key.strip()] = value.strip()
 
             # Extract calories
             calories_str = nutrition_data.get('熱量', '0 大卡')
@@ -116,7 +123,7 @@ class UploadAndAnalyze(APIView):
             result_data = {
                 'predictions': predictions,
                 'ratio': f"{ratio:.2%}",
-                'gemini': gemini_resp,
+                'gemini': gemini_resp or '營養模型暫無回覆，已提供基本預測結果',
                 'nutrition': {
                     'calories': est_cal,
                     'carbs': safe_extract_float('碳水化合物'),
