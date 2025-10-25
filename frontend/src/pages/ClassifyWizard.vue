@@ -330,7 +330,7 @@ async function saveHistory() {
   const formData = new FormData()
   formData.append('image', file.value)
 
-  const detections = (result.value.predictions || []).map(p => ({
+  const detections = (filteredPredictions.value || []).map(p => ({
     item: p.name,
     confidence: p.confidence,
     calories: result.value.nutrition?.calories,
