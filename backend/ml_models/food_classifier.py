@@ -9,6 +9,8 @@ from PIL import Image
 import json
 import os
 from pathlib import Path
+import numpy as np
+import cv2
 
 
 class FoodClassifier:
@@ -162,16 +164,13 @@ class FoodSeg103Classifier:
         self.model_path = model_path
         self.class_names_path = class_names_path
         
-        # Image preprocessing transforms for SETR (768x768 input)
-        # Using the same normalization as in the config file
-        # mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375] are in 0-255 range
-        # Converting to 0-1 range: mean/255, std/255
-        self.transform = transforms.Compose([
-            transforms.Resize((768, 768)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[123.675/255, 116.28/255, 103.53/255], 
-                               std=[58.395/255, 57.12/255, 57.375/255])
-        ])
+        # Image preprocessing transforms for SETR-MLA
+        # Following mmseg's preprocessing: normalize in 0-255 range, THEN convert to tensor
+        # This matches the training/testing pipeline exactly
+        self.img_norm_cfg = {
+            'mean': torch.tensor([123.675, 116.28, 103.53]),
+            'std': torch.tensor([58.395, 57.12, 57.375])
+        }
         
         self.load_model()
         self.load_class_names()
@@ -269,13 +268,13 @@ class FoodSeg103Classifier:
     
     def preprocess_image(self, image):
         """
-        Preprocess image for model input.
+        Preprocess image for SETR-MLA model following mmseg pipeline.
         
         Args:
             image: PIL Image or image path
             
         Returns:
-            torch.Tensor: Preprocessed image tensor
+            torch.Tensor: Preprocessed image tensor [1, 3, H, W]
         """
         if isinstance(image, str):
             image = Image.open(image).convert('RGB')
@@ -283,7 +282,27 @@ class FoodSeg103Classifier:
             # Handle file-like objects
             image = Image.open(image).convert('RGB')
         
-        return self.transform(image).unsqueeze(0).to(self.device)
+        # Convert PIL to numpy (RGB format, 0-255)
+        img = np.array(image, dtype=np.float32)
+        
+        # Resize keeping aspect ratio (max side = 2049 like in config)
+        h, w = img.shape[:2]
+        max_size = 2049
+        scale = min(max_size / max(h, w), 1.0)
+        if scale < 1.0:
+            new_h, new_w = int(h * scale), int(w * scale)
+            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+        
+        # Normalize in 0-255 range (mmseg style)
+        # img = (img - mean) / std
+        mean = self.img_norm_cfg['mean'].numpy()
+        std = self.img_norm_cfg['std'].numpy()
+        img = (img - mean) / std
+        
+        # Convert to tensor and adjust dimensions: HWC -> CHW
+        img = torch.from_numpy(img).permute(2, 0, 1).float()
+        
+        return img.unsqueeze(0).to(self.device)
     
     def predict(self, image, threshold=None):
         """

@@ -60,8 +60,8 @@ api.interceptors.response.use(
                     return Promise.reject(error);
                 }
 
-                const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/'}token/refresh/`,
+                const response = await api.post(
+                    'token/refresh/',
                     { refresh: refreshToken }
                 );
 
