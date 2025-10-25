@@ -48,6 +48,15 @@ class UploadAndAnalyze(APIView):
         # Note: SETR-MLA uses lower thresholds (0.2-0.3) due to segmentation-based classification
         predictions = classifier.predict(img, threshold=0.2)
         
+        # Debug logging
+        print(f"[DEBUG] Predictions count: {len(predictions)}")
+        if predictions:
+            print(f"[DEBUG] Top 5 predictions:")
+            for pred in predictions[:5]:
+                print(f"  - {pred['name']}: {pred['confidence']:.4f}")
+        else:
+            print("[DEBUG] No predictions returned from model")
+        
         if not predictions:
             return JsonResponse({'error': True, 'message': 'No food items detected'})
 

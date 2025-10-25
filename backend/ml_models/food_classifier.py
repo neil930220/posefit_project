@@ -210,13 +210,21 @@ class FoodSeg103Classifier:
             missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
             
             if missing_keys:
-                print(f"Warning: Missing keys in checkpoint: {len(missing_keys)} keys")
-                if len(missing_keys) <= 10:
-                    print(f"  Missing keys: {missing_keys}")
+                print(f"\nWarning: Missing keys in checkpoint: {len(missing_keys)} keys")
+                print(f"  First 5 missing keys: {missing_keys[:5]}")
+                if len(missing_keys) > 100:
+                    print(f"  ⚠️  WARNING: Too many missing keys ({len(missing_keys)})! Model may not work properly.")
             if unexpected_keys:
-                print(f"Warning: Unexpected keys in checkpoint: {len(unexpected_keys)} keys")
-                if len(unexpected_keys) <= 10:
-                    print(f"  Unexpected keys: {unexpected_keys}")
+                print(f"\nWarning: Unexpected keys in checkpoint: {len(unexpected_keys)} keys")
+                print(f"  First 5 unexpected keys: {unexpected_keys[:5]}")
+            
+            # Count loaded parameters
+            total_params = sum(p.numel() for p in self.model.parameters())
+            print(f"\nModel statistics:")
+            print(f"  Total parameters: {total_params:,}")
+            print(f"  Successfully loaded: {len(state_dict) - len(unexpected_keys)} keys")
+            print(f"  Missing: {len(missing_keys)} keys")
+            print(f"  Load success rate: {(len(state_dict) - len(unexpected_keys)) / (len(state_dict) - len(unexpected_keys) + len(missing_keys)) * 100:.1f}%")
             
             self.model = self.model.to(self.device)
             self.model.eval()
@@ -280,6 +288,21 @@ class FoodSeg103Classifier:
         with torch.no_grad():
             probabilities = self.model.predict_multilabel(input_tensor).cpu().squeeze(0)
         
+        # Debug: Log probability statistics
+        max_prob = probabilities.max().item()
+        mean_prob = probabilities.mean().item()
+        print(f"[SETR-MLA] Max probability: {max_prob:.4f}, Mean probability: {mean_prob:.4f}")
+        
+        # Get top 10 probabilities for debugging
+        top_probs, top_indices = torch.topk(probabilities, min(10, len(probabilities)))
+        print(f"[SETR-MLA] Top 10 probabilities:")
+        for i in range(min(10, len(top_probs))):
+            idx = top_indices[i].item()
+            prob = top_probs[i].item()
+            class_id = str(idx)
+            class_name = self.class_names.get(class_id, f"class_{class_id}")
+            print(f"  {i+1}. {class_name} (class {idx}): {prob:.4f}")
+        
         # Get predictions above threshold
         predictions = []
         for idx in range(len(probabilities)):
@@ -295,6 +318,8 @@ class FoodSeg103Classifier:
                     'name': class_name,
                     'confidence': prob
                 })
+        
+        print(f"[SETR-MLA] Found {len(predictions)} predictions above threshold {threshold}")
         
         # Sort by confidence (highest first)
         predictions.sort(key=lambda x: x['confidence'], reverse=True)
