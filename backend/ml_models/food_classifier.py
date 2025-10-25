@@ -136,53 +136,57 @@ class FoodClassifier:
 
 class FoodSeg103Classifier:
     """
-    Multi-label food classification using FoodSeg103 Swin Transformer model.
+    Multi-label food classification using FoodSeg103 SETR-MLA model.
     """
     
-    def __init__(self, model_path=None, class_names_path=None, threshold=0.8):
+    def __init__(self, model_path=None, class_names_path=None, threshold=0.3):
         """
         Initialize the FoodSeg103 classifier.
         
         Args:
             model_path (str): Path to the trained model checkpoint
             class_names_path (str): Path to the class mapping JSON file
-            threshold (float): Classification threshold (0.7-0.9 recommended due to model training issues)
+            threshold (float): Classification threshold (lower for segmentation-based classification)
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = None
         self.class_names = {}
         self.threshold = threshold
         
-        # Default paths
+        # Default paths - now using SETR_MLA model
         if model_path is None:
-            model_path = Path(__file__).parent / 'models' / 'foodseg103_swin_best.pth'
+            model_path = Path(__file__).parent / 'models' / 'foodseg103_setr_iter_80000.pth'
         if class_names_path is None:
             class_names_path = Path(__file__).parent / 'models' / 'foodseg103_classes.json'
             
         self.model_path = model_path
         self.class_names_path = class_names_path
         
-        # Image preprocessing transforms (same as training)
+        # Image preprocessing transforms for SETR (768x768 input)
+        # Using the same normalization as in the config file
+        # mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375] are in 0-255 range
+        # Converting to 0-1 range: mean/255, std/255
         self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize((768, 768)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                               std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[123.675/255, 116.28/255, 103.53/255], 
+                               std=[58.395/255, 57.12/255, 57.375/255])
         ])
         
         self.load_model()
         self.load_class_names()
     
     def load_model(self):
-        """Load the trained Swin Transformer model from checkpoint."""
+        """Load the trained SETR-MLA model from checkpoint."""
         try:
-            from .foodseg103_model import create_model
+            from .foodseg103_model import create_model, convert_mmseg_checkpoint
             
-            # Create model architecture
+            # Create SETR-MLA model architecture (104 classes including background)
             self.model = create_model(
-                model_name='swin',
-                num_classes=103,
-                pretrained=False
+                model_name='setr_mla',
+                num_classes=104,
+                pretrained=False,
+                img_size=768
             )
             
             # Load checkpoint with compatibility for PyTorch 2.6 weights_only default
@@ -198,13 +202,30 @@ class FoodSeg103Classifier:
                     raise e
                 except Exception:
                     raise
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+            
+            # Convert mmseg checkpoint format
+            state_dict = convert_mmseg_checkpoint(checkpoint)
+            
+            # Try to load with strict=False to handle any key mismatches
+            missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
+            
+            if missing_keys:
+                print(f"Warning: Missing keys in checkpoint: {len(missing_keys)} keys")
+                if len(missing_keys) <= 10:
+                    print(f"  Missing keys: {missing_keys}")
+            if unexpected_keys:
+                print(f"Warning: Unexpected keys in checkpoint: {len(unexpected_keys)} keys")
+                if len(unexpected_keys) <= 10:
+                    print(f"  Unexpected keys: {unexpected_keys}")
+            
             self.model = self.model.to(self.device)
             self.model.eval()
             
-            print(f"FoodSeg103 model loaded successfully from {self.model_path}")
+            print(f"SETR-MLA model loaded successfully from {self.model_path}")
         except Exception as e:
-            print(f"Error loading FoodSeg103 model: {e}")
+            print(f"Error loading SETR-MLA model: {e}")
+            import traceback
+            traceback.print_exc()
             raise
     
     def load_class_names(self):
@@ -255,25 +276,25 @@ class FoodSeg103Classifier:
         # Preprocess image
         input_tensor = self.preprocess_image(image)
         
-        # Make prediction
+        # Make prediction using SETR's multilabel prediction
         with torch.no_grad():
-            outputs = self.model(input_tensor)
-            probabilities = torch.sigmoid(outputs).cpu().squeeze(0)
+            probabilities = self.model.predict_multilabel(input_tensor).cpu().squeeze(0)
         
         # Get predictions above threshold
         predictions = []
         for idx in range(len(probabilities)):
             prob = probabilities[idx].item()
             if prob >= threshold:
-                class_id = str(idx + 1)  # Class IDs start at 1 (0 is background)
+                # Class IDs: 0 is background, 1-103 are food classes
+                if idx == 0:  # Skip background class
+                    continue
+                class_id = str(idx)  # Map to class ID in JSON (1-103)
                 class_name = self.class_names.get(class_id, f"class_{class_id}")
                 
-                # Skip background class
-                if class_name != "background":
-                    predictions.append({
-                        'name': class_name,
-                        'confidence': prob
-                    })
+                predictions.append({
+                    'name': class_name,
+                    'confidence': prob
+                })
         
         # Sort by confidence (highest first)
         predictions.sort(key=lambda x: x['confidence'], reverse=True)

@@ -21,6 +21,7 @@ argon2-cffi==23.1.0
 # Machine Learning
 torch
 torchvision
+timm
 Pillow
 opencv-python==4.10.0.84
 numpy==2.0.2
