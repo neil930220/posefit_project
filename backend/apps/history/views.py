@@ -86,4 +86,9 @@ class FoodEntryViewSet(viewsets.ModelViewSet):
         return FoodEntry.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        meal_type = self.request.data.get('meal_type', '').strip()
+        valid = {'breakfast', 'lunch', 'dinner'}
+        payload = {}
+        if meal_type in valid:
+            payload['meal_type'] = meal_type
+        serializer.save(user=self.request.user, **payload)

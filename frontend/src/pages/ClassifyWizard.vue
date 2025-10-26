@@ -34,6 +34,30 @@
           <input ref="imageInput" type="file" accept="image/*" class="sr-only" @change="onFilePicked" />
         </div>
 
+        <!-- Meal Type Selector (Optional) -->
+        <div class="mt-4">
+          <div class="text-gray-300 mb-2">選擇餐別（可選）</div>
+          <div class="flex gap-3">
+            <label class="inline-flex items-center gap-2 text-gray-200 cursor-pointer">
+              <input type="radio" name="mealType" class="form-radio" value="breakfast" v-model="mealType" />
+              <span>早餐</span>
+            </label>
+            <label class="inline-flex items-center gap-2 text-gray-200 cursor-pointer">
+              <input type="radio" name="mealType" class="form-radio" value="lunch" v-model="mealType" />
+              <span>午餐</span>
+            </label>
+            <label class="inline-flex items-center gap-2 text-gray-200 cursor-pointer">
+              <input type="radio" name="mealType" class="form-radio" value="dinner" v-model="mealType" />
+              <span>晚餐</span>
+            </label>
+            <button
+              type="button"
+              class="ml-2 px-3 py-1 text-sm border border-gray-600 text-gray-300 rounded hover:bg-[#1e2021]"
+              @click="mealType = null"
+            >清除</button>
+          </div>
+        </div>
+
         <div class="mt-6 flex justify-end space-x-3">
           <button
             class="px-6 py-2 border border-gray-600 text-gray-200 rounded-lg hover:bg-[#1e2021] transition"
@@ -253,6 +277,7 @@ const result = ref(null)
 const isDragging = ref(false)
 const imageInput = ref(null)
 const error = ref(null)
+  const mealType = ref(null) // 'breakfast' | 'lunch' | 'dinner' | null
 
 const progressWidth = computed(() => {
   if (step.value === 1) return '33%'
@@ -382,6 +407,9 @@ async function saveHistory() {
 
   formData.append('detections', JSON.stringify(detections))
   formData.append('total_calories', result.value.total_calories || 0)
+    if (mealType.value) {
+      formData.append('meal_type', mealType.value)
+    }
 
   try {
     await api.post('/api/history/entries/', formData, {

@@ -3,6 +3,12 @@
 from django.conf import settings
 from django.db import models
 
+MEAL_TYPE_CHOICES = (
+    ("breakfast", "早餐"),
+    ("lunch", "午餐"),
+    ("dinner", "晚餐"),
+)
+
 class FoodEntry(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -25,6 +31,13 @@ class FoodEntry(models.Model):
     )
     total_calories = models.IntegerField(
         help_text="Sum of calories for this entry"
+    )
+    meal_type = models.CharField(
+        max_length=16,
+        choices=MEAL_TYPE_CHOICES,
+        blank=True,
+        default="",
+        help_text="Optional: 早餐/午餐/晚餐"
     )
     created_at = models.DateTimeField(
         auto_now_add=True,

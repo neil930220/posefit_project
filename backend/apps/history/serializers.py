@@ -11,6 +11,7 @@ class FoodEntrySerializer(serializers.ModelSerializer):
             "image",
             "detections",
             "total_calories",
+            "meal_type",
             "created_at",
         ]
         read_only_fields = ["id", "user", "session_key", "created_at"]
