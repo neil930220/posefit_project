@@ -297,6 +297,47 @@
       </div>
     </div>
   </section>
+  
+  <!-- Edit Dialog -->
+  <div v-if="showEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+      <h3 class="text-xl font-semibold text-gray-800 mb-4">編輯紀錄</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm text-gray-700 mb-1">餐別</label>
+          <select v-model="editMealType" class="w-full px-3 py-2 border rounded-lg">
+            <option value="">未指定</option>
+            <option value="breakfast">早餐</option>
+            <option value="lunch">午餐</option>
+            <option value="dinner">晚餐</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 mb-1">總卡路里</label>
+          <input type="number" v-model.number="editTotalCalories" min="0" class="w-full px-3 py-2 border rounded-lg" />
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm text-gray-700">檢測項目</label>
+          <button class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600" @click="addDetectionRow">新增項目</button>
+        </div>
+        <div v-if="editDetections.length === 0" class="text-gray-500 text-sm">尚無項目</div>
+        <div v-for="(d, i) in editDetections" :key="i" class="flex items-center gap-2 mb-2">
+          <input v-model="d.item" placeholder="項目名稱" class="flex-1 px-3 py-2 border rounded-lg" />
+          <span v-if="d.confidence !== undefined" class="text-xs text-gray-500">{{ (d.confidence * 100).toFixed(0) }}%</span>
+          <button class="px-2 py-1 bg-red-600 text-white rounded" @click="removeDetectionRow(i)">刪除</button>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button class="px-4 py-2 border rounded-lg" @click="closeEdit">取消</button>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" @click="submitEdit">儲存</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -647,49 +688,4 @@ input:focus, select:focus, button:focus {
   animation: gradient 3s ease infinite;
 }
 </style>
-
-<!-- Edit Dialog -->
-<template v-if="showEdit">
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
-      <h3 class="text-xl font-semibold text-gray-800 mb-4">編輯紀錄</h3>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label class="block text-sm text-gray-700 mb-1">餐別</label>
-          <select v-model="editMealType" class="w-full px-3 py-2 border rounded-lg">
-            <option value="">未指定</option>
-            <option value="breakfast">早餐</option>
-            <option value="lunch">午餐</option>
-            <option value="dinner">晚餐</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm text-gray-700 mb-1">總卡路里</label>
-          <input type="number" v-model.number="editTotalCalories" min="0" class="w-full px-3 py-2 border rounded-lg" />
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <div class="flex items-center justify-between mb-2">
-          <label class="block text-sm text-gray-700">檢測項目</label>
-          <button class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600" @click="addDetectionRow">新增項目</button>
-        </div>
-        <div v-if="editDetections.length === 0" class="text-gray-500 text-sm">尚無項目</div>
-        <div v-for="(d, i) in editDetections" :key="i" class="flex items-center gap-2 mb-2">
-          <input v-model="d.item" placeholder="項目名稱" class="flex-1 px-3 py-2 border rounded-lg" />
-          <span v-if="d.confidence !== undefined" class="text-xs text-gray-500">{{ (d.confidence * 100).toFixed(0) }}%</span>
-          <button class="px-2 py-1 bg-red-600 text-white rounded" @click="removeDetectionRow(i)">刪除</button>
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-3">
-        <button class="px-4 py-2 border rounded-lg" @click="closeEdit">取消</button>
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" @click="submitEdit">儲存</button>
-      </div>
-    </div>
-  </div>
-  </template>
-
-
 
