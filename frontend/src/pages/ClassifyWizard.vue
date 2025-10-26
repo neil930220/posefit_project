@@ -109,16 +109,16 @@
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Left: Nutrition Info -->
-        <div class="bg-[#2a2b2c] rounded-xl shadow-lg h-[800px] flex flex-col">
+        <div class="bg-[#2a2b2c] rounded-xl shadow-lg h-[800px] flex flex-col overflow-hidden">
           <div class="p-6 border-b border-gray-700">
             <h1 class="text-2xl font-semibold text-white">營養資訊</h1>
           </div>
-          <div class="flex-1 p-6 flex flex-col">
-            <div v-if="result" class="h-full flex flex-col">
+          <div class="flex-1 p-6 flex flex-col overflow-hidden">
+            <div v-if="result" class="h-full flex flex-col overflow-hidden">
               <div class="flex-1 flex justify-center items-center min-h-[400px]">
                 <Doughnut v-if="chartData" :data="chartData" :options="chartOptions" />
               </div>
-              <div class="space-y-3 mt-6">
+              <div class="space-y-3 mt-6 overflow-y-auto pr-2">
                 <div class="flex justify-between items-center text-gray-200 text-lg">
                   <span>熱量</span>
                   <span class="font-medium">{{ finalCalories }} 大卡</span>
