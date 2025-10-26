@@ -1,6 +1,5 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
-import Upload from './pages/upload.vue'
 import ClassifyWizard from './pages/ClassifyWizard.vue'
 import SignupForm from './components/auth/SignupForm.vue'
 import LoginForm from './components/auth/LoginForm.vue'
