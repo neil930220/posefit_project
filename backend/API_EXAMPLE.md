@@ -234,14 +234,22 @@ fetch('http://localhost:8000/api/classify/upload/', {
 | `predictions[].name` | String | Name of the detected food class |
 | `predictions[].confidence` | Float | Confidence score (0.0 to 1.0) |
 | `ratio` | String | Percentage of image occupied by food |
-| `gemini` | String | Raw response from Gemini AI about nutrition |
-| `nutrition` | Object | Parsed nutrition information |
+| `gemini` | String | Raw response from Gemini AI about nutrition (may be JSON) |
+| `nutrition` | Object | Parsed nutrition information (backward compatible + expanded fields) |
 | `nutrition.calories` | Integer | Total calories in kcal |
 | `nutrition.carbs` | Float | Carbohydrates in grams |
 | `nutrition.protein` | Float | Protein in grams |
 | `nutrition.fat` | Float | Fat in grams |
-| `nutrition.vitamins` | String | Description of vitamins |
-| `nutrition.minerals` | String | Description of minerals |
+| `nutrition.fiber` | Float | Dietary fiber in grams |
+| `nutrition.sugar` | Float | Total sugar in grams |
+| `nutrition.sodium_mg` | Float | Sodium in milligrams |
+| `nutrition.cholesterol_mg` | Float | Cholesterol in milligrams |
+| `nutrition.potassium_mg` | Float | Potassium in milligrams |
+| `nutrition.fat_breakdown` | Object/null | Detailed fats; keys: `saturated_fat_g`, `monounsaturated_fat_g`, `polyunsaturated_fat_g`, `trans_fat_g` |
+| `nutrition.minerals_mg` | Object/null | Minerals in mg; keys: `calcium`, `iron`, `magnesium`, `phosphorus`, `zinc` |
+| `nutrition.vitamins_detail` | Object/null | Vitamins; keys: `vitamin_a_ug_rae`, `vitamin_c_mg`, `vitamin_d_ug`, `vitamin_e_mg`, `vitamin_k_ug`, `thiamin_b1_mg`, `riboflavin_b2_mg`, `niacin_b3_mg`, `vitamin_b6_mg`, `folate_b9_ug_dfe`, `vitamin_b12_ug` |
+| `nutrition.vitamins` | String | Backward-compatible summary of vitamins |
+| `nutrition.minerals` | String | Backward-compatible summary of minerals |
 | `total_calories` | Integer | Same as nutrition.calories (legacy field) |
 | `error` | Boolean | Present only on errors |
 | `message` | String | Error message (present only on errors) |

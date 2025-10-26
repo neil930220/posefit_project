@@ -80,17 +80,51 @@ class UploadAndAnalyze(APIView):
             food_names = [p['name'] for p in predictions]
             food_list_str = "、".join(food_names)
             
-            # Gemini nutrition analysis for combined foods
+            # Gemini nutrition analysis for combined foods (request STRICT JSON)
             desc = (
                 f"這張圖片中檢測到以下食物：「{food_list_str}」，"
                 f"食物約佔整張圖片的 {ratio:.1%}。"
-                "請依據這些食物提供整體的營養資訊（所有檢測到的食物的總和），請使用以下格式回覆："
-                "熱量: [數字] 大卡\n"
-                "碳水化合物: [數字] 克\n"
-                "蛋白質: [數字] 克\n"
-                "脂肪: [數字] 克\n"
-                "維生素: [簡短描述主要維生素]\n"
-                "礦物質: [簡短描述主要礦物質]"
+                "請根據這些食物提供『合計』的營養素，並且只回覆一段有效的 JSON（不要加入任何解說或前後文，也不要使用 Markdown 區塊）。\n"
+                "欄位與單位請完全依下列結構輸出（數值請為數字型態，沒有資料請填 0）：\n"
+                "{\n"
+                "  \"calories_kcal\": 0,\n"
+                "  \"macros\": {\n"
+                "    \"carbs_g\": 0,\n"
+                "    \"protein_g\": 0,\n"
+                "    \"fat_g\": 0,\n"
+                "    \"fiber_g\": 0,\n"
+                "    \"sugar_g\": 0\n"
+                "  },\n"
+                "  \"fat_breakdown\": {\n"
+                "    \"saturated_fat_g\": 0,\n"
+                "    \"monounsaturated_fat_g\": 0,\n"
+                "    \"polyunsaturated_fat_g\": 0,\n"
+                "    \"trans_fat_g\": 0\n"
+                "  },\n"
+                "  \"cholesterol_mg\": 0,\n"
+                "  \"sodium_mg\": 0,\n"
+                "  \"potassium_mg\": 0,\n"
+                "  \"minerals_mg\": {\n"
+                "    \"calcium\": 0,\n"
+                "    \"iron\": 0,\n"
+                "    \"magnesium\": 0,\n"
+                "    \"phosphorus\": 0,\n"
+                "    \"zinc\": 0\n"
+                "  },\n"
+                "  \"vitamins\": {\n"
+                "    \"vitamin_a_ug_rae\": 0,\n"
+                "    \"vitamin_c_mg\": 0,\n"
+                "    \"vitamin_d_ug\": 0,\n"
+                "    \"vitamin_e_mg\": 0,\n"
+                "    \"vitamin_k_ug\": 0,\n"
+                "    \"thiamin_b1_mg\": 0,\n"
+                "    \"riboflavin_b2_mg\": 0,\n"
+                "    \"niacin_b3_mg\": 0,\n"
+                "    \"vitamin_b6_mg\": 0,\n"
+                "    \"folate_b9_ug_dfe\": 0,\n"
+                "    \"vitamin_b12_ug\": 0\n"
+                "  }\n"
+                "}"
             )
             # Gemini request with safe fallback
             try:
@@ -100,13 +134,29 @@ class UploadAndAnalyze(APIView):
                 print(f"[WARN] Gemini analysis failed: {e}")
                 gemini_resp = ''
             
-            # Parse the structured response
+            # Parse the structured response (prefer JSON, fallback to simple key:value lines)
             nutrition_data = {}
+            advanced = None
             if gemini_resp:
-                for line in gemini_resp.split('\n'):
-                    if ':' in line:
-                        key, value = line.split(':', 1)
-                        nutrition_data[key.strip()] = value.strip()
+                # Try JSON parse directly
+                try:
+                    advanced = json.loads(gemini_resp)
+                except Exception:
+                    # Try to extract JSON block within text if any
+                    try:
+                        start = gemini_resp.find('{')
+                        end = gemini_resp.rfind('}')
+                        if start != -1 and end != -1 and end > start:
+                            advanced = json.loads(gemini_resp[start:end+1])
+                    except Exception:
+                        advanced = None
+
+                if advanced is None:
+                    # Fallback: parse simple key: value lines (old format)
+                    for line in gemini_resp.split('\n'):
+                        if ':' in line:
+                            key, value = line.split(':', 1)
+                            nutrition_data[key.strip()] = value.strip()
 
             # Extract calories
             calories_str = nutrition_data.get('熱量', '0 大卡')
@@ -119,20 +169,99 @@ class UploadAndAnalyze(APIView):
                 match = re.search(r'(\d+\.?\d*)', value_str)
                 return float(match.group(1)) if match else 0.0
 
-            # Build JSON response
+            # Helpers to safely read from advanced JSON
+            def get_num(obj, key, default=0.0):
+                try:
+                    val = obj.get(key, default)
+                    return float(val) if isinstance(val, (int, float, str)) and str(val).strip() != '' else default
+                except Exception:
+                    return default
+
+            def get_nested(obj, path, default=0.0):
+                try:
+                    cur = obj
+                    for p in path:
+                        cur = cur.get(p, {}) if isinstance(cur, dict) else {}
+                    if isinstance(cur, (int, float)):
+                        return float(cur)
+                    if isinstance(cur, str):
+                        m = re.search(r'(\d+\.?\d*)', cur)
+                        return float(m.group(1)) if m else default
+                    return default
+                except Exception:
+                    return default
+
+            # Derive advanced fields if available
+            advanced_out = None
+            if isinstance(advanced, dict):
+                advanced_out = {
+                    'calories_kcal': get_num(advanced, 'calories_kcal', 0.0),
+                    'macros': {
+                        'carbs_g': get_nested(advanced, ['macros', 'carbs_g'], 0.0),
+                        'protein_g': get_nested(advanced, ['macros', 'protein_g'], 0.0),
+                        'fat_g': get_nested(advanced, ['macros', 'fat_g'], 0.0),
+                        'fiber_g': get_nested(advanced, ['macros', 'fiber_g'], 0.0),
+                        'sugar_g': get_nested(advanced, ['macros', 'sugar_g'], 0.0),
+                    },
+                    'fat_breakdown': {
+                        'saturated_fat_g': get_nested(advanced, ['fat_breakdown', 'saturated_fat_g'], 0.0),
+                        'monounsaturated_fat_g': get_nested(advanced, ['fat_breakdown', 'monounsaturated_fat_g'], 0.0),
+                        'polyunsaturated_fat_g': get_nested(advanced, ['fat_breakdown', 'polyunsaturated_fat_g'], 0.0),
+                        'trans_fat_g': get_nested(advanced, ['fat_breakdown', 'trans_fat_g'], 0.0),
+                    },
+                    'cholesterol_mg': get_num(advanced, 'cholesterol_mg', 0.0),
+                    'sodium_mg': get_num(advanced, 'sodium_mg', 0.0),
+                    'potassium_mg': get_num(advanced, 'potassium_mg', 0.0),
+                    'minerals_mg': {
+                        'calcium': get_nested(advanced, ['minerals_mg', 'calcium'], 0.0),
+                        'iron': get_nested(advanced, ['minerals_mg', 'iron'], 0.0),
+                        'magnesium': get_nested(advanced, ['minerals_mg', 'magnesium'], 0.0),
+                        'phosphorus': get_nested(advanced, ['minerals_mg', 'phosphorus'], 0.0),
+                        'zinc': get_nested(advanced, ['minerals_mg', 'zinc'], 0.0),
+                    },
+                    'vitamins': {
+                        'vitamin_a_ug_rae': get_nested(advanced, ['vitamins', 'vitamin_a_ug_rae'], 0.0),
+                        'vitamin_c_mg': get_nested(advanced, ['vitamins', 'vitamin_c_mg'], 0.0),
+                        'vitamin_d_ug': get_nested(advanced, ['vitamins', 'vitamin_d_ug'], 0.0),
+                        'vitamin_e_mg': get_nested(advanced, ['vitamins', 'vitamin_e_mg'], 0.0),
+                        'vitamin_k_ug': get_nested(advanced, ['vitamins', 'vitamin_k_ug'], 0.0),
+                        'thiamin_b1_mg': get_nested(advanced, ['vitamins', 'thiamin_b1_mg'], 0.0),
+                        'riboflavin_b2_mg': get_nested(advanced, ['vitamins', 'riboflavin_b2_mg'], 0.0),
+                        'niacin_b3_mg': get_nested(advanced, ['vitamins', 'niacin_b3_mg'], 0.0),
+                        'vitamin_b6_mg': get_nested(advanced, ['vitamins', 'vitamin_b6_mg'], 0.0),
+                        'folate_b9_ug_dfe': get_nested(advanced, ['vitamins', 'folate_b9_ug_dfe'], 0.0),
+                        'vitamin_b12_ug': get_nested(advanced, ['vitamins', 'vitamin_b12_ug'], 0.0),
+                    }
+                }
+
+            # Build JSON response (preserve backward-compatible fields)
+            basic_carbs = safe_extract_float('碳水化合物') if advanced_out is None else advanced_out['macros']['carbs_g']
+            basic_protein = safe_extract_float('蛋白質') if advanced_out is None else advanced_out['macros']['protein_g']
+            basic_fat = safe_extract_float('脂肪') if advanced_out is None else advanced_out['macros']['fat_g']
+            vitamins_text = nutrition_data.get('維生素', '')
+            minerals_text = nutrition_data.get('礦物質', '')
+
             result_data = {
                 'predictions': predictions,
                 'ratio': f"{ratio:.2%}",
                 'gemini': gemini_resp or '營養模型暫無回覆，已提供基本預測結果',
                 'nutrition': {
-                    'calories': est_cal,
-                    'carbs': safe_extract_float('碳水化合物'),
-                    'protein': safe_extract_float('蛋白質'),
-                    'fat': safe_extract_float('脂肪'),
-                    'vitamins': nutrition_data.get('維生素', ''),
-                    'minerals': nutrition_data.get('礦物質', '')
+                    'calories': est_cal if advanced_out is None else int(round(advanced_out['calories_kcal'] or 0)),
+                    'carbs': basic_carbs,
+                    'protein': basic_protein,
+                    'fat': basic_fat,
+                    'fiber': 0.0 if advanced_out is None else advanced_out['macros']['fiber_g'],
+                    'sugar': 0.0 if advanced_out is None else advanced_out['macros']['sugar_g'],
+                    'sodium_mg': 0.0 if advanced_out is None else advanced_out['sodium_mg'],
+                    'cholesterol_mg': 0.0 if advanced_out is None else advanced_out['cholesterol_mg'],
+                    'potassium_mg': 0.0 if advanced_out is None else advanced_out['potassium_mg'],
+                    'fat_breakdown': None if advanced_out is None else advanced_out['fat_breakdown'],
+                    'minerals_mg': None if advanced_out is None else advanced_out['minerals_mg'],
+                    'vitamins_detail': None if advanced_out is None else advanced_out['vitamins'],
+                    'vitamins': vitamins_text,
+                    'minerals': minerals_text
                 },
-                'total_calories': est_cal,
+                'total_calories': est_cal if advanced_out is None else int(round(advanced_out['calories_kcal'] or 0)),
             }
             return Response(result_data, status=status.HTTP_200_OK)
         

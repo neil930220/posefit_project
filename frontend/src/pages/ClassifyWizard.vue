@@ -111,9 +111,68 @@
                   <span>脂肪</span>
                   <span class="font-medium">{{ result.nutrition.fat }} 克</span>
                 </div>
+                <div v-if="result?.nutrition?.fiber !== undefined" class="flex justify-between items-center text-gray-200 text-lg">
+                  <span>膳食纖維</span>
+                  <span class="font-medium">{{ result.nutrition.fiber }} 克</span>
+                </div>
+                <div v-if="result?.nutrition?.sugar !== undefined" class="flex justify-between items-center text-gray-200 text-lg">
+                  <span>糖</span>
+                  <span class="font-medium">{{ result.nutrition.sugar }} 克</span>
+                </div>
+                <div v-if="result?.nutrition?.sodium_mg !== undefined" class="flex justify-between items-center text-gray-200 text-lg">
+                  <span>鈉</span>
+                  <span class="font-medium">{{ result.nutrition.sodium_mg }} 毫克</span>
+                </div>
+                <div v-if="result?.nutrition?.cholesterol_mg !== undefined" class="flex justify-between items-center text-gray-200 text-lg">
+                  <span>膽固醇</span>
+                  <span class="font-medium">{{ result.nutrition.cholesterol_mg }} 毫克</span>
+                </div>
+                <div v-if="result?.nutrition?.potassium_mg !== undefined" class="flex justify-between items-center text-gray-200 text-lg">
+                  <span>鉀</span>
+                  <span class="font-medium">{{ result.nutrition.potassium_mg }} 毫克</span>
+                </div>
+
+                <div v-if="result?.nutrition?.fat_breakdown" class="text-gray-200 mt-4">
+                  <p class="mb-2 font-medium">脂肪細分</p>
+                  <div class="space-y-2">
+                    <div class="flex justify-between"><span class="text-gray-300">飽和脂肪</span><span class="font-medium">{{ result.nutrition.fat_breakdown.saturated_fat_g }} 克</span></div>
+                    <div class="flex justify-between"><span class="text-gray-300">單元不飽和脂肪</span><span class="font-medium">{{ result.nutrition.fat_breakdown.monounsaturated_fat_g }} 克</span></div>
+                    <div class="flex justify-between"><span class="text-gray-300">多元不飽和脂肪</span><span class="font-medium">{{ result.nutrition.fat_breakdown.polyunsaturated_fat_g }} 克</span></div>
+                    <div class="flex justify-between"><span class="text-gray-300">反式脂肪</span><span class="font-medium">{{ result.nutrition.fat_breakdown.trans_fat_g }} 克</span></div>
+                  </div>
+                </div>
+
                 <div class="text-gray-200 mt-4">
                   <p class="mb-2"><span class="font-medium">維生素：</span>{{ result.nutrition.vitamins }}</p>
                   <p><span class="font-medium">礦物質：</span>{{ result.nutrition.minerals }}</p>
+                </div>
+
+                <div v-if="result?.nutrition?.minerals_mg" class="text-gray-200 mt-4">
+                  <p class="mb-2 font-medium">礦物質（毫克）</p>
+                  <div class="grid grid-cols-2 gap-2 text-gray-300">
+                    <div>鈣：{{ result.nutrition.minerals_mg.calcium }} mg</div>
+                    <div>鐵：{{ result.nutrition.minerals_mg.iron }} mg</div>
+                    <div>鎂：{{ result.nutrition.minerals_mg.magnesium }} mg</div>
+                    <div>磷：{{ result.nutrition.minerals_mg.phosphorus }} mg</div>
+                    <div>鋅：{{ result.nutrition.minerals_mg.zinc }} mg</div>
+                  </div>
+                </div>
+
+                <div v-if="result?.nutrition?.vitamins_detail" class="text-gray-200 mt-4">
+                  <p class="mb-2 font-medium">維生素詳情</p>
+                  <div class="grid grid-cols-2 gap-2 text-gray-300">
+                    <div>維生素 A：{{ result.nutrition.vitamins_detail.vitamin_a_ug_rae }} μg RAE</div>
+                    <div>維生素 C：{{ result.nutrition.vitamins_detail.vitamin_c_mg }} mg</div>
+                    <div>維生素 D：{{ result.nutrition.vitamins_detail.vitamin_d_ug }} μg</div>
+                    <div>維生素 E：{{ result.nutrition.vitamins_detail.vitamin_e_mg }} mg</div>
+                    <div>維生素 K：{{ result.nutrition.vitamins_detail.vitamin_k_ug }} μg</div>
+                    <div>維生素 B1：{{ result.nutrition.vitamins_detail.thiamin_b1_mg }} mg</div>
+                    <div>維生素 B2：{{ result.nutrition.vitamins_detail.riboflavin_b2_mg }} mg</div>
+                    <div>維生素 B3：{{ result.nutrition.vitamins_detail.niacin_b3_mg }} mg</div>
+                    <div>維生素 B6：{{ result.nutrition.vitamins_detail.vitamin_b6_mg }} mg</div>
+                    <div>葉酸（B9，DFE）：{{ result.nutrition.vitamins_detail.folate_b9_ug_dfe }} μg</div>
+                    <div>維生素 B12：{{ result.nutrition.vitamins_detail.vitamin_b12_ug }} μg</div>
+                  </div>
                 </div>
               </div>
             </div>
