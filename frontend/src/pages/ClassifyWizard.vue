@@ -227,6 +227,76 @@
             <div v-else class="text-gray-500">尚未有預測</div>
           </div>
 
+          <!-- Editable fields for detections and calories -->
+          <div class="bg-[#2a2b2c] rounded-xl shadow-lg p-6 mt-6">
+            <h2 class="text-xl font-semibold text-white mb-4">編輯並儲存到歷史</h2>
+            <div v-if="result" class="space-y-4">
+              <!-- Editable detections list -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-gray-200 font-medium">檢測項目</h3>
+                  <button
+                    class="px-2 py-1 text-sm bg-gray-700 text-white rounded hover:bg-gray-600"
+                    @click="addEditableDetection"
+                  >新增項目</button>
+                </div>
+                <div v-if="editableDetections.length === 0" class="text-gray-400 text-sm">目前無可編輯項目</div>
+                <div v-for="(d, idx) in editableDetections" :key="idx" class="flex items-center gap-2 mb-2">
+                  <input
+                    class="flex-1 px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                    v-model="d.item"
+                    placeholder="項目名稱"
+                  />
+                  <span class="text-gray-400 text-sm" v-if="d.confidence !== undefined">{{ (d.confidence * 100).toFixed(0) }}%</span>
+                  <button
+                    class="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                    @click="removeEditableDetection(idx)"
+                  >刪除</button>
+                </div>
+              </div>
+
+              <!-- Editable total calories -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-300 mb-1">總卡路里（大卡）</label>
+                  <input
+                    type="number"
+                    class="w-full px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                    v-model.number="editedTotalCalories"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-300 mb-1">餐別</label>
+                  <div class="flex gap-3 text-gray-200">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="mealTypeEdit" value="breakfast" v-model="mealType" />
+                      <span>早餐</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="mealTypeEdit" value="lunch" v-model="mealType" />
+                      <span>午餐</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="mealTypeEdit" value="dinner" v-model="mealType" />
+                      <span>晚餐</span>
+                    </label>
+                    <button type="button" class="px-2 py-1 text-sm border border-gray-600 rounded hover:bg-[#1e2021]" @click="mealType = null">清除</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-2 text-right">
+                <button
+                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  :disabled="loading || !file"
+                  @click="saveHistory"
+                >儲存到歷史</button>
+              </div>
+            </div>
+            <div v-else class="text-gray-500">完成分析後可編輯並儲存</div>
+          </div>
+
           <div class="bg-[#2a2b2c] rounded-xl shadow-lg p-6 mt-6">
             <h2 class="text-xl font-semibold text-white mb-4">你的猜測 vs 結果</h2>
             <div v-if="result" class="grid grid-cols-3 gap-4 text-center text-gray-200">
@@ -278,6 +348,10 @@ const isDragging = ref(false)
 const imageInput = ref(null)
 const error = ref(null)
   const mealType = ref(null) // 'breakfast' | 'lunch' | 'dinner' | null
+
+// Editable state derived from result
+const editableDetections = ref([])
+const editedTotalCalories = ref(0)
 
 const progressWidth = computed(() => {
   if (step.value === 1) return '33%'
@@ -378,6 +452,8 @@ async function onSubmit() {
     } else {
       result.value = data
       step.value = 3
+      // Initialize editable fields after result ready
+      initializeEditableFields()
       await saveHistory()
     }
   } catch (err) {
@@ -395,18 +471,17 @@ async function saveHistory() {
 
   const formData = new FormData()
   formData.append('image', file.value)
-
-  const detections = (filteredPredictions.value || []).map(p => ({
-    item: p.name,
-    confidence: p.confidence,
-    calories: result.value.nutrition?.calories,
-    carbs: result.value.nutrition?.carbs,
-    protein: result.value.nutrition?.protein,
-    fat: result.value.nutrition?.fat
+  // Use edited values
+  const detectionsPayload = (editableDetections.value || []).map(d => ({
+    item: d.item,
+    confidence: d.confidence,
+    calories: result.value?.nutrition?.calories,
+    carbs: result.value?.nutrition?.carbs,
+    protein: result.value?.nutrition?.protein,
+    fat: result.value?.nutrition?.fat
   }))
-
-  formData.append('detections', JSON.stringify(detections))
-  formData.append('total_calories', result.value.total_calories || 0)
+  formData.append('detections', JSON.stringify(detectionsPayload))
+  formData.append('total_calories', editedTotalCalories.value || result.value.total_calories || 0)
     if (mealType.value) {
       formData.append('meal_type', mealType.value)
     }
@@ -436,6 +511,22 @@ function restart() {
   reset()
   guessKcal.value = 400
   step.value = 1
+}
+
+function initializeEditableFields() {
+  // Initialize detections from filtered predictions
+  const preds = filteredPredictions.value || []
+  editableDetections.value = preds.map(p => ({ item: p.name, confidence: p.confidence }))
+  // Initialize calories from result
+  editedTotalCalories.value = result.value?.total_calories || result.value?.nutrition?.calories || 0
+}
+
+function addEditableDetection() {
+  editableDetections.value.push({ item: '', confidence: 0 })
+}
+
+function removeEditableDetection(index) {
+  editableDetections.value.splice(index, 1)
 }
 </script>
 

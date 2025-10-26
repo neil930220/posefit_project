@@ -65,19 +65,53 @@ Authorization: Bearer your_access_token
 }
 ```
 
-### User History
+### User History (FoodEntry)
 
-#### Get User History
+Base path: `/api/history/entries/`
+
+#### List History Entries
 ```http
-GET /api/history/
+GET /api/history/entries/?ordering=-created_at&date_from=2025-01-01&date_to=2025-12-31&calories_min=100&calories_max=1000&period=today
 Authorization: Bearer your_access_token
 ```
 
-#### Get Specific History Item
+Query params:
+- `ordering`: `created_at`, `-created_at`, `total_calories`, `-total_calories`
+- `date_from`, `date_to`: ISO 日期
+- `period`: `today|yesterday|this_week|last_week|this_month|last_month`
+- `calories_min`, `calories_max`: 數值
+
+#### Create History Entry
 ```http
-GET /api/history/{id}/
+POST /api/history/entries/
+Content-Type: multipart/form-data
 Authorization: Bearer your_access_token
+
+image: <file>
+detections: [{"item":"bread","confidence":0.9,"calories":240,"carbs":40,"protein":8,"fat":3}] (as JSON string)
+total_calories: 240
+meal_type: breakfast
 ```
+
+#### Update History Entry (owner only)
+```http
+PATCH /api/history/entries/{id}/
+Content-Type: application/json
+Authorization: Bearer your_access_token
+
+{
+  "detections": [
+    {"item": "fried rice", "confidence": 0.91, "calories": 520, "carbs": 70, "protein": 12, "fat": 18}
+  ],
+  "total_calories": 520,
+  "meal_type": "lunch"
+}
+```
+
+Fields:
+- `detections`: 陣列（每項至少含 `item`；其餘欄位可保留原值）
+- `total_calories`: 整數
+- `meal_type`: `breakfast|lunch|dinner` 或空字串
 
 ### User Management
 

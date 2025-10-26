@@ -259,6 +259,14 @@
               <p class="text-sm font-medium text-gray-600">{{ formatTime(entry.created_at) }}</p>
             </div>
           </div>
+
+          <!-- Actions -->
+          <div class="mt-4 text-right">
+            <button
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              @click="openEdit(entry)"
+            >編輯</button>
+          </div>
         </div>
       </div>
     </div>
@@ -294,6 +302,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { cookieStorage } from '../../utils/cookies'
+import api from '../../services/api'
 
 // Normalize API base to always include /api/
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api/` : 'http://localhost:8000/api/')
@@ -530,6 +539,64 @@ onMounted(() => {
   console.log('HistoryList: Refresh token present:', !!cookieStorage.getItem('refresh_token'))
   loadEntries()
 })
+
+// --- Edit dialog state ---
+const showEdit = ref(false)
+const editingId = ref(null)
+const editMealType = ref('')
+const editTotalCalories = ref(0)
+const editDetections = ref([])
+
+function openEdit(entry) {
+  editingId.value = entry.id
+  editMealType.value = entry.meal_type || ''
+  editTotalCalories.value = entry.total_calories || 0
+  editDetections.value = (entry.detections || []).map(d => ({
+    item: d.item || '',
+    confidence: d.confidence,
+    calories: d.calories,
+    carbs: d.carbs,
+    protein: d.protein,
+    fat: d.fat,
+  }))
+  showEdit.value = true
+}
+
+function closeEdit() {
+  showEdit.value = false
+  editingId.value = null
+}
+
+function addDetectionRow() {
+  editDetections.value.push({ item: '', confidence: 0 })
+}
+
+function removeDetectionRow(idx) {
+  editDetections.value.splice(idx, 1)
+}
+
+async function submitEdit() {
+  if (!editingId.value) return
+  try {
+    const payload = {
+      detections: editDetections.value,
+      total_calories: editTotalCalories.value,
+      meal_type: editMealType.value || ''
+    }
+    await api.patch(`history/entries/${editingId.value}/`, payload)
+    // Update list locally
+    const idx = entries.value.findIndex(e => e.id === editingId.value)
+    if (idx !== -1) {
+      entries.value[idx] = { ...entries.value[idx], ...payload }
+    }
+    closeEdit()
+  } catch (e) {
+    console.error('Update entry failed:', e)
+    // fallback reload
+    await loadEntries()
+    closeEdit()
+  }
+}
 </script>
 
 <style scoped>
@@ -580,6 +647,49 @@ input:focus, select:focus, button:focus {
   animation: gradient 3s ease infinite;
 }
 </style>
+
+<!-- Edit Dialog -->
+<template v-if="showEdit">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+      <h3 class="text-xl font-semibold text-gray-800 mb-4">編輯紀錄</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm text-gray-700 mb-1">餐別</label>
+          <select v-model="editMealType" class="w-full px-3 py-2 border rounded-lg">
+            <option value="">未指定</option>
+            <option value="breakfast">早餐</option>
+            <option value="lunch">午餐</option>
+            <option value="dinner">晚餐</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700 mb-1">總卡路里</label>
+          <input type="number" v-model.number="editTotalCalories" min="0" class="w-full px-3 py-2 border rounded-lg" />
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm text-gray-700">檢測項目</label>
+          <button class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600" @click="addDetectionRow">新增項目</button>
+        </div>
+        <div v-if="editDetections.length === 0" class="text-gray-500 text-sm">尚無項目</div>
+        <div v-for="(d, i) in editDetections" :key="i" class="flex items-center gap-2 mb-2">
+          <input v-model="d.item" placeholder="項目名稱" class="flex-1 px-3 py-2 border rounded-lg" />
+          <span v-if="d.confidence !== undefined" class="text-xs text-gray-500">{{ (d.confidence * 100).toFixed(0) }}%</span>
+          <button class="px-2 py-1 bg-red-600 text-white rounded" @click="removeDetectionRow(i)">刪除</button>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button class="px-4 py-2 border rounded-lg" @click="closeEdit">取消</button>
+        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" @click="submitEdit">儲存</button>
+      </div>
+    </div>
+  </div>
+  </template>
 
 
 
