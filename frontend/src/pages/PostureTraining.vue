@@ -345,10 +345,12 @@ const startRealTimeDetection = () => {
   console.log('🎬 開始即時檢測...')
   isRealTimeDetection.value = true
   
-  // 每 500ms 檢測一次（約 2 FPS），降低伺服器負載
+  // 每 100ms 檢測一次（約 10 FPS），提高流暢度
   analysisInterval = setInterval(() => {
-    captureAndAnalyzeFrame()
-  }, 500)
+    if (isRealTimeDetection.value) {
+      captureAndAnalyzeFrame()
+    }
+  }, 100)
   
   // 立即執行第一次檢測
   captureAndAnalyzeFrame()
@@ -363,11 +365,21 @@ const stopRealTimeDetection = () => {
   }
 }
 
+let isProcessing = false  // 防止重複請求
+
 const captureAndAnalyzeFrame = async () => {
+  // 防止重複請求
+  if (isProcessing) {
+    console.log('⏳ Already processing, skipping this frame...')
+    return
+  }
+  
   if (!isCameraOn.value || !videoElement.value || !isRealTimeDetection.value) {
     console.warn('⚠️ Camera not ready or detection stopped')
     return
   }
+  
+  isProcessing = true
   
   try {
     console.log(`📸 Capturing frame #${frameCount.value}...`)
@@ -381,7 +393,7 @@ const captureAndAnalyzeFrame = async () => {
     ctx.drawImage(videoElement.value, 0, 0)
     
     // Convert to base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.7)
+    const imageData = canvas.toDataURL('image/jpeg', 0.5)
     
     console.log('📤 Sending to API...')
     
@@ -401,7 +413,7 @@ const captureAndAnalyzeFrame = async () => {
     // Draw pose on canvas with annotated image (REALTIME)
     drawPoseOnCanvas(response.data.keypoints, response.data.annotated_image)
     
-    console.log(`🎯 Detected ${response.data.keypoints?.length || 0} keypoints`)
+    console.log(`🎯 Detected ${response.data.keypoints?.length || 0} keypoints, Frame: ${frameCount.value}`)
     
     // Update training stats
     if (currentSession.value) {
@@ -415,6 +427,8 @@ const captureAndAnalyzeFrame = async () => {
     
     // 繼續執行，不要停止檢測
     console.log('🔄 Continuing detection despite error...')
+  } finally {
+    isProcessing = false
   }
 }
 
