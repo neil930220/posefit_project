@@ -95,11 +95,12 @@
                 </button>
                 
                 <button 
-                  @click="captureFrame"
-                  :disabled="!isCameraOn || isLoading"
-                  class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg"
+                  @click="toggleRealTimeDetection"
+                  :disabled="!isCameraOn"
+                  class="px-4 py-2 rounded-lg"
+                  :class="isRealTimeDetection ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'"
                 >
-                  分析姿勢
+                  {{ isRealTimeDetection ? '停止即時檢測' : '開始即時檢測' }}
                 </button>
               </div>
               
@@ -248,6 +249,8 @@ const canvasHeight = ref(480)
 // Camera stream
 let stream = null
 let animationId = null
+let isRealTimeDetection = ref(false)
+let analysisInterval = null
 
 // Lifecycle
 onMounted(async () => {
@@ -302,6 +305,8 @@ const initCamera = async () => {
 }
 
 const stopCamera = () => {
+  stopRealTimeDetection()
+  
   if (stream) {
     stream.getTracks().forEach(track => track.stop())
     stream = null
@@ -316,18 +321,48 @@ const stopCamera = () => {
 
 const toggleCamera = () => {
   if (isCameraOn.value) {
+    stopRealTimeDetection()
     stopCamera()
   } else {
     initCamera()
   }
 }
 
-const captureFrame = async () => {
+const toggleRealTimeDetection = () => {
+  if (isRealTimeDetection.value) {
+    stopRealTimeDetection()
+  } else {
+    startRealTimeDetection()
+  }
+}
+
+const startRealTimeDetection = () => {
+  if (!isCameraOn.value) {
+    alert('請先開啟攝影鏡頭')
+    return
+  }
+  
+  isRealTimeDetection.value = true
+  
+  // 每 100ms 檢測一次（約 10 FPS），讓骨架更流暢地跟隨
+  analysisInterval = setInterval(() => {
+    captureAndAnalyzeFrame()
+  }, 100)
+}
+
+const stopRealTimeDetection = () => {
+  isRealTimeDetection.value = false
+  
+  if (analysisInterval) {
+    clearInterval(analysisInterval)
+    analysisInterval = null
+  }
+}
+
+const captureAndAnalyzeFrame = async () => {
   if (!isCameraOn.value || !videoElement.value) return
   
   try {
-    isLoading.value = true
-    
     // Capture frame from video
     const canvas = document.createElement('canvas')
     canvas.width = videoElement.value.videoWidth
@@ -337,7 +372,7 @@ const captureFrame = async () => {
     ctx.drawImage(videoElement.value, 0, 0)
     
     // Convert to base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.8)
+    const imageData = canvas.toDataURL('image/jpeg', 0.7)
     
     // Send to API
     const response = await api.post('api/exercise/analyze-pose/', {
@@ -350,8 +385,8 @@ const captureFrame = async () => {
     currentAnalysis.value = response.data
     frameCount.value++
     
-    // Draw pose on canvas
-    drawPoseOnCanvas(response.data.keypoints)
+    // Draw pose on canvas with annotated image (REALTIME)
+    drawPoseOnCanvas(response.data.keypoints, response.data.annotated_image)
     
     // Update training stats
     if (currentSession.value) {
@@ -361,52 +396,89 @@ const captureFrame = async () => {
     
   } catch (error) {
     console.error('Pose analysis failed:', error)
-  } finally {
-    isLoading.value = false
   }
 }
 
-const drawPoseOnCanvas = (keypoints) => {
-  if (!poseCanvas.value || !keypoints) return
+const captureFrame = async () => {
+  // 單次分析模式
+  await captureAndAnalyzeFrame()
+}
+
+const drawPoseOnCanvas = (keypoints, annotatedImage) => {
+  if (!poseCanvas.value) return
   
   const canvas = poseCanvas.value
   const ctx = canvas.getContext('2d')
   
-  // Clear canvas
+  // 完全清除 canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   
-  // Draw keypoints
-  keypoints.forEach(kp => {
-    if (kp.confidence > 0.5) {
-      const x = kp.x * canvas.width
-      const y = kp.y * canvas.height
-      
-      ctx.beginPath()
-      ctx.arc(x, y, 5, 0, 2 * Math.PI)
-      ctx.fillStyle = '#00ff00'
-      ctx.fill()
+  // 如果有帶註釋的影像（從後端返回的帶有繪製的影像）
+  if (annotatedImage) {
+    const img = new Image()
+    img.onload = () => {
+      // 先清除
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      // 繪製帶有骨架的影像
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
     }
-  })
+    img.src = annotatedImage
+    return
+  }
   
-  // Draw connections (simplified)
+  // 如果沒有帶註釋的影像，手動繪製（備用方案）
+  if (!keypoints || keypoints.length === 0) {
+    return
+  }
+  
+  // MediaPipe Pose 連接
   const connections = [
-    [0, 1], [1, 2], [1, 5], [2, 3], [3, 4], [5, 6], [6, 7],
-    [1, 8], [8, 9], [8, 12], [9, 10], [10, 11], [12, 13], [13, 14]
+    // Face
+    [0, 1], [1, 2], [2, 3], [3, 7],
+    // Upper body
+    [0, 4], [4, 5], [5, 6], [6, 8],
+    [0, 7], [7, 9], [9, 10], [10, 11],
+    [11, 12], [12, 13], [13, 14], [14, 15],
+    [12, 17], [11, 18],
+    // Lower body
+    [17, 19], [19, 21], [21, 23], [23, 25],
+    [18, 20], [20, 22], [22, 24], [24, 26]
   ]
   
+  // 先繪製骨架連接
   connections.forEach(([start, end]) => {
     if (start < keypoints.length && end < keypoints.length) {
       const kp1 = keypoints[start]
       const kp2 = keypoints[end]
       
-      if (kp1.confidence > 0.5 && kp2.confidence > 0.5) {
+      if (kp1.confidence > 0.3 && kp2.confidence > 0.3) {
         ctx.beginPath()
         ctx.moveTo(kp1.x * canvas.width, kp1.y * canvas.height)
         ctx.lineTo(kp2.x * canvas.width, kp2.y * canvas.height)
-        ctx.strokeStyle = '#ff0000'
-        ctx.lineWidth = 2
+        ctx.strokeStyle = '#ff0080'  // 洋紅色
+        ctx.lineWidth = 4
         ctx.stroke()
       }
+    }
+  })
+  
+  // 再繪製關鍵點（較大、較明顯）
+  keypoints.forEach(kp => {
+    if (kp.confidence > 0.3) {
+      const x = kp.x * canvas.width
+      const y = kp.y * canvas.height
+      
+      // 外圈（較大，綠色）
+      ctx.beginPath()
+      ctx.arc(x, y, 10, 0, 2 * Math.PI)
+      ctx.fillStyle = '#00ff00'
+      ctx.fill()
+      
+      // 內圈（較小，深綠色）
+      ctx.beginPath()
+      ctx.arc(x, y, 5, 0, 2 * Math.PI)
+      ctx.fillStyle = '#00cc00'
+      ctx.fill()
     }
   })
 }

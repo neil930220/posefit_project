@@ -1,5 +1,5 @@
 """
-OpenPose-based Pose Detection Module
+MediaPipe-based Pose Detection Module
 """
 
 import cv2
@@ -10,100 +10,127 @@ from typing import List, Dict, Tuple, Optional
 from pathlib import Path
 import logging
 
+try:
+    import mediapipe as mp
+    MEDIAPIPE_AVAILABLE = True
+except ImportError:
+    MEDIAPIPE_AVAILABLE = False
+    import warnings
+    warnings.warn("MediaPipe not available, using fallback detection")
+
 logger = logging.getLogger(__name__)
 
 
 class OpenPoseDetector:
     """
-    OpenPose 姿勢檢測器
+    MediaPipe 姿勢檢測器
     支援實時攝影鏡頭輸入和姿勢分析
     """
     
     def __init__(self, model_path: Optional[str] = None):
         """
-        初始化 OpenPose 檢測器
+        初始化 MediaPipe 檢測器
         
         Args:
-            model_path: OpenPose 模型檔案路徑
+            model_path: 未使用（保持向後兼容）
         """
         self.model_path = model_path
-        self.net = None
+        self.mp_pose = None
+        self.pose = None
         self.keypoints = None
         self.confidence_threshold = 0.1
         
-        # OpenPose 關鍵點定義 (COCO 格式)
-        self.POSE_PAIRS = [
-            (0, 1), (0, 2), (1, 3), (2, 4),  # Head
-            (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),  # Arms
-            (5, 11), (6, 12), (11, 12),  # Torso
-            (11, 13), (12, 14), (13, 15), (14, 16)  # Legs
+        # MediaPipe 關鍵點定義 (33 個關鍵點)
+        self.POSE_CONNECTIONS = [
+            # Face
+            (0, 1), (1, 2), (2, 3), (3, 7),
+            # Upper body
+            (0, 4), (4, 5), (5, 6), (6, 8),
+            (0, 7), (7, 9), (9, 10), (10, 11),
+            (11, 12), (12, 13), (13, 14), (14, 15),
+            (12, 24), (11, 23),
+            # Lower body
+            (12, 24), (24, 26), (26, 28), (28, 30), (30, 32),
+            (11, 23), (23, 25), (25, 27), (27, 29), (29, 31),
+            (24, 26), (23, 25), (26, 28), (25, 27)
         ]
         
-        # 關鍵點名稱
+        # 關鍵點名稱 (MediaPipe Pose 格式 - 33個關鍵點)
         self.KEYPOINT_NAMES = [
-            "Nose", "Neck", "RShoulder", "RElbow", "RWrist",
-            "LShoulder", "LElbow", "LWrist", "MidHip", "RHip",
-            "RKnee", "RAnkle", "LHip", "LKnee", "LAnkle",
-            "REye", "LEye", "REar", "LEar", "LBigToe",
-            "LSmallToe", "LHeel", "RBigToe", "RSmallToe", "RHeel"
+            "Nose",                              # 0
+            "LEye", "REye",                      # 1-2
+            "LEar", "REar",                       # 3-4
+            "LShoulder", "RShoulder",            # 5-6
+            "LElbow", "RElbow",                  # 7-8
+            "LWrist", "RWrist",                  # 9-10
+            "LPinky", "RPinky",                  # 11-12
+            "LIndex", "RIndex",                  # 13-14
+            "LThumb", "RThumb",                 # 15-16
+            "LHip", "RHip",                     # 17-18
+            "LKnee", "RKnee",                   # 19-20
+            "LAnkle", "RAnkle",                 # 21-22
+            "LHeel", "RHeel",                   # 23-24
+            "LFootIndex", "RFootIndex",         # 25-26
+            "LFootInner", "RFootInner",         # 27-28
+            "LFootOuter", "RFootOuter",         # 29-30
+            "LFootHeel", "RFootHeel"            # 31-32
         ]
         
         self._load_model()
     
     def _load_model(self):
-        """載入 OpenPose 模型"""
+        """載入 MediaPipe 模型"""
         try:
-            if self.model_path and os.path.exists(self.model_path):
-                # 載入預訓練的 OpenPose 模型
-                self.net = cv2.dnn.readNetFromTensorflow(self.model_path)
-                logger.info(f"OpenPose model loaded from {self.model_path}")
+            if MEDIAPIPE_AVAILABLE:
+                self.mp_pose = mp.solutions.pose
+                self.pose = self.mp_pose.Pose(
+                    static_image_mode=False,
+                    model_complexity=1,
+                    smooth_landmarks=True,
+                    enable_segmentation=False,
+                    smooth_segmentation=True,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5
+                )
+                logger.info("MediaPipe Pose model loaded successfully")
             else:
-                # 使用 OpenCV 內建的 DNN 模型
-                self._load_opencv_dnn_model()
+                logger.warning("MediaPipe not available, using fallback detection")
+                self._load_fallback_model()
         except Exception as e:
-            logger.error(f"Failed to load OpenPose model: {e}")
-            self._load_opencv_dnn_model()
+            logger.error(f"Failed to load MediaPipe model: {e}")
+            self._load_fallback_model()
     
-    def _load_opencv_dnn_model(self):
-        """載入 OpenCV DNN 模型作為備用方案"""
+    def _load_fallback_model(self):
+        """載入備用檢測模型"""
         try:
-            # 使用 OpenCV 的預訓練人體姿勢檢測模型
-            model_url = "https://github.com/opencv/opencv/raw/master/samples/dnn/openpose_pose_coco.prototxt"
-            weights_url = "https://github.com/opencv/opencv/raw/master/samples/dnn/openpose_pose_coco.caffemodel"
-            
-            # 這裡我們使用一個簡化的方法，實際部署時需要下載模型檔案
-            logger.warning("Using simplified pose detection - full OpenPose model not available")
-            self.net = None
+            logger.warning("Using fallback pose detection")
+            self.pose = None
         except Exception as e:
-            logger.error(f"Failed to load OpenCV DNN model: {e}")
-            self.net = None
+            logger.error(f"Failed to load fallback model: {e}")
+            self.pose = None
     
     def detect_pose(self, frame: np.ndarray) -> Dict:
         """
         檢測單一幀的姿勢
         
         Args:
-            frame: 輸入影像幀
+            frame: 輸入影像幀 (BGR 格式)
             
         Returns:
             包含關鍵點和姿勢資訊的字典
         """
-        if self.net is None:
+        if self.pose is None:
             return self._fallback_pose_detection(frame)
         
         try:
-            # 準備輸入
-            blob = cv2.dnn.blobFromImage(
-                frame, 1.0/255, (368, 368), (0, 0, 0), 
-                swapRB=False, crop=False
-            )
+            # MediaPipe 需要 RGB 格式
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
-            # 執行推理
-            self.net.setInput(blob)
-            output = self.net.forward()
+            # 執行姿勢檢測
+            results = self.pose.process(rgb_frame)
             
-            # 解析輸出
-            keypoints = self._parse_keypoints(output, frame.shape)
+            # 解析結果
+            keypoints = self._parse_mediapipe_results(results, frame.shape)
             
             return {
                 'keypoints': keypoints,
@@ -209,13 +236,24 @@ class OpenPoseDetector:
         
         return keypoints
     
-    def _parse_keypoints(self, output: np.ndarray, frame_shape: Tuple) -> List[Dict]:
-        """解析 OpenPose 輸出為關鍵點"""
+    def _parse_mediapipe_results(self, results, frame_shape: Tuple) -> List[Dict]:
+        """解析 MediaPipe 輸出為關鍵點"""
         keypoints = []
         height, width = frame_shape[:2]
         
-        # 這裡需要根據實際的 OpenPose 輸出格式進行解析
-        # 目前返回空列表，實際實作時需要根據模型輸出格式調整
+        if not results.pose_landmarks:
+            return keypoints
+        
+        # MediaPipe 的關鍵點已經標準化到 [0, 1]
+        for idx, landmark in enumerate(results.pose_landmarks.landmark):
+            keypoints.append({
+                'id': idx,
+                'name': self.KEYPOINT_NAMES[idx] if idx < len(self.KEYPOINT_NAMES) else f"Point_{idx}",
+                'x': landmark.x,
+                'y': landmark.y,
+                'z': landmark.z,
+                'confidence': landmark.visibility
+            })
         
         return keypoints
     
@@ -250,17 +288,17 @@ class OpenPoseDetector:
         errors = []
         
         if not keypoints:
-            errors.append("No keypoints detected")
+            errors.append("No person detected")
             return errors
         
         # 檢查關鍵點可見性
-        visible_keypoints = [kp for kp in keypoints if kp.get('confidence', 0) > 0.5]
-        if len(visible_keypoints) < 8:
-            errors.append("Insufficient keypoints visible")
+        visible_keypoints = [kp for kp in keypoints if kp.get('confidence', 0) > 0.3]
+        if len(visible_keypoints) < 10:
+            errors.append("檢測到的關鍵點不足，請確保全身在鏡頭範圍內")
         
         # 檢查姿勢對稱性
         if self._check_posture_symmetry(keypoints):
-            errors.append("Asymmetric posture detected")
+            errors.append("檢測到身體不對稱，請保持平衡")
         
         return errors
     
@@ -275,7 +313,7 @@ class OpenPoseDetector:
         
         if left_shoulder and right_shoulder:
             y_diff = abs(left_shoulder['y'] - right_shoulder['y'])
-            if y_diff > 0.1:  # 10% 的影像高度
+            if y_diff > 0.05:  # 5% 的影像高度差異
                 return True
         
         return False
@@ -285,15 +323,8 @@ class OpenPoseDetector:
         if not keypoints:
             return frame
         
-        # 繪製關鍵點
-        for kp in keypoints:
-            if kp.get('confidence', 0) > self.confidence_threshold:
-                x = int(kp['x'] * frame.shape[1])
-                y = int(kp['y'] * frame.shape[0])
-                cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
-        
-        # 繪製骨架連接
-        for pair in self.POSE_PAIRS:
+        # 繪製骨架連接（先畫線，這樣點會在上面）
+        for pair in self.POSE_CONNECTIONS:
             if pair[0] < len(keypoints) and pair[1] < len(keypoints):
                 kp1 = keypoints[pair[0]]
                 kp2 = keypoints[pair[1]]
@@ -306,7 +337,19 @@ class OpenPoseDetector:
                     x2 = int(kp2['x'] * frame.shape[1])
                     y2 = int(kp2['y'] * frame.shape[0])
                     
-                    cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    # 使用較粗的線條，顏色為藍色
+                    cv2.line(frame, (x1, y1), (x2, y2), (255, 100, 0), 3)
+        
+        # 繪製關鍵點（較大的圓點）
+        for kp in keypoints:
+            if kp.get('confidence', 0) > self.confidence_threshold:
+                x = int(kp['x'] * frame.shape[1])
+                y = int(kp['y'] * frame.shape[0])
+                
+                # 外圈（較大）
+                cv2.circle(frame, (x, y), 8, (0, 255, 0), -1)
+                # 內圈（較小）
+                cv2.circle(frame, (x, y), 4, (0, 150, 0), -1)
         
         return frame
     
