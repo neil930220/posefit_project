@@ -397,12 +397,24 @@ const captureAndAnalyzeFrame = async () => {
     
     console.log('📤 Sending to API...')
     
-    // Send to API
-    const response = await api.post('api/exercise/analyze-pose/', {
-      image: imageData,
-      exercise_type: getExerciseTypeName(selectedExerciseType.value),
-      session_id: currentSession.value?.id,
-      frame_number: frameCount.value
+    // Create FormData for multipart/form-data
+    const formData = new FormData()
+    
+    // Convert base64 to Blob
+    const base64Data = imageData.split(',')[1]
+    const blob = await fetch(imageData).then(r => r.blob())
+    formData.append('image', blob, 'frame.jpg')
+    formData.append('exercise_type', getExerciseTypeName(selectedExerciseType.value))
+    if (currentSession.value?.id) {
+      formData.append('session_id', currentSession.value.id)
+    }
+    formData.append('frame_number', frameCount.value.toString())
+    
+    // Send to API with FormData
+    const response = await api.post('api/exercise/analyze-pose/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     })
     
     console.log('✅ Response received:', response.data)
