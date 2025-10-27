@@ -364,8 +364,8 @@ const stopRealTimeDetection = () => {
 }
 
 const captureAndAnalyzeFrame = async () => {
-  if (!isCameraOn.value || !videoElement.value) {
-    console.warn('⚠️ Camera not ready')
+  if (!isCameraOn.value || !videoElement.value || !isRealTimeDetection.value) {
+    console.warn('⚠️ Camera not ready or detection stopped')
     return
   }
   
@@ -412,6 +412,9 @@ const captureAndAnalyzeFrame = async () => {
   } catch (error) {
     console.error('❌ Pose analysis failed:', error)
     console.error('Error details:', error.response?.data || error.message)
+    
+    // 繼續執行，不要停止檢測
+    console.log('🔄 Continuing detection despite error...')
   }
 }
 

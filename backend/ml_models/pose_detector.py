@@ -98,41 +98,49 @@ class OpenPoseDetector:
     
     def _simple_pose_detection(self, frame: np.ndarray) -> Dict:
         """簡化的姿勢檢測"""
-        # 使用 HOG 人體檢測
-        hog = cv2.HOGDescriptor()
-        hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        # 使用多種方法提高檢測準確度
+        boxes = []
         
-        # 檢測人體
-        boxes, weights = hog.detectMultiScale(frame, winStride=(8, 8), padding=(32, 32), scale=1.05)
-        
-        if len(boxes) > 0:
-            # 找到最大的人體框
-            largest_box = max(boxes, key=lambda x: x[2] * x[3])
-            keypoints = self._estimate_keypoints_from_box(largest_box, frame.shape)
+        # 方法 1: HOG 人體檢測（更寬鬆的參數）
+        try:
+            hog = cv2.HOGDescriptor()
+            hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+            detected_boxes, weights = hog.detectMultiScale(
+                frame, 
+                winStride=(4, 4),  # 更密集的步長
+                padding=(8, 8),      # 更小的填充
+                scale=1.02          # 更細的尺度變化
+            )
             
-            return {
-                'keypoints': keypoints,
-                'confidence': 0.7,
-                'pose_score': self._calculate_pose_score(keypoints),
-                'detected_errors': self._detect_pose_errors(keypoints),
-                'timestamp': cv2.getTickCount() / cv2.getTickFrequency()
-            }
-        else:
-            # 如果 HOG 沒檢測到人體，假設在影像中央有人
-            # 創建一個模擬的人體框
+            # 只保留高置信度的檢測
+            for box, weight in zip(detected_boxes, weights):
+                if weight > 0.3:  # 提高閾值
+                    boxes.append(box)
+        except Exception as e:
+            logger.warning(f"HOG detection failed: {e}")
+        
+        # 方法 2: 如果 HOG 沒找到，使用預設位置
+        if len(boxes) == 0:
+            # 假設在影像中央有人
             h, w = frame.shape[:2]
             center_box = (w // 4, h // 6, w // 2, h * 2 // 3)  # x, y, width, height
-            keypoints = self._estimate_keypoints_from_box(center_box, frame.shape)
-            
-            logger.warning("HOG 檢測未發現人體，使用預設人體框")
-            
-            return {
-                'keypoints': keypoints,
-                'confidence': 0.5,  # 較低信心度
-                'pose_score': self._calculate_pose_score(keypoints),
-                'detected_errors': ['使用預設人體框，請確保全身在鏡頭中央'],
-                'timestamp': cv2.getTickCount() / cv2.getTickFrequency()
-            }
+            boxes.append(center_box)
+            logger.info("使用預設人體框位置")
+        
+        # 選擇最大的人體框
+        largest_box = max(boxes, key=lambda x: x[2] * x[3])
+        keypoints = self._estimate_keypoints_from_box(largest_box, frame.shape)
+        
+        # 根據是否檢測到人體調整信心度
+        confidence = 0.7 if len(boxes) > 0 else 0.5
+        
+        return {
+            'keypoints': keypoints,
+            'confidence': confidence,
+            'pose_score': self._calculate_pose_score(keypoints),
+            'detected_errors': self._detect_pose_errors(keypoints) if confidence > 0.6 else ['使用預設人體框，請確保全身在鏡頭中央'],
+            'timestamp': cv2.getTickCount() / cv2.getTickFrequency()
+        }
     
     def _fallback_pose_detection(self, frame: np.ndarray) -> Dict:
         """
