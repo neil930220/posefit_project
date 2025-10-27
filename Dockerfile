@@ -42,9 +42,13 @@ WORKDIR /app/backend
 # 收集靜態檔案（建置時執行）
 RUN python manage.py collectstatic --noinput || true
 
+# 複製啟動腳本
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # 暴露端口
 EXPOSE 8080
 
 # 啟動指令
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8080", "--workers", "3", "--timeout", "120"]
+CMD ["/app/start.sh"]
 
