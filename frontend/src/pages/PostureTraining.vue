@@ -342,12 +342,16 @@ const startRealTimeDetection = () => {
     return
   }
   
+  console.log('🎬 開始即時檢測...')
   isRealTimeDetection.value = true
   
-  // 每 100ms 檢測一次（約 10 FPS），讓骨架更流暢地跟隨
+  // 每 500ms 檢測一次（約 2 FPS），降低伺服器負載
   analysisInterval = setInterval(() => {
     captureAndAnalyzeFrame()
-  }, 100)
+  }, 500)
+  
+  // 立即執行第一次檢測
+  captureAndAnalyzeFrame()
 }
 
 const stopRealTimeDetection = () => {
@@ -360,9 +364,14 @@ const stopRealTimeDetection = () => {
 }
 
 const captureAndAnalyzeFrame = async () => {
-  if (!isCameraOn.value || !videoElement.value) return
+  if (!isCameraOn.value || !videoElement.value) {
+    console.warn('⚠️ Camera not ready')
+    return
+  }
   
   try {
+    console.log(`📸 Capturing frame #${frameCount.value}...`)
+    
     // Capture frame from video
     const canvas = document.createElement('canvas')
     canvas.width = videoElement.value.videoWidth
@@ -374,6 +383,8 @@ const captureAndAnalyzeFrame = async () => {
     // Convert to base64
     const imageData = canvas.toDataURL('image/jpeg', 0.7)
     
+    console.log('📤 Sending to API...')
+    
     // Send to API
     const response = await api.post('api/exercise/analyze-pose/', {
       image: imageData,
@@ -382,11 +393,15 @@ const captureAndAnalyzeFrame = async () => {
       frame_number: frameCount.value
     })
     
+    console.log('✅ Response received:', response.data)
+    
     currentAnalysis.value = response.data
     frameCount.value++
     
     // Draw pose on canvas with annotated image (REALTIME)
     drawPoseOnCanvas(response.data.keypoints, response.data.annotated_image)
+    
+    console.log(`🎯 Detected ${response.data.keypoints?.length || 0} keypoints`)
     
     // Update training stats
     if (currentSession.value) {
@@ -395,7 +410,8 @@ const captureAndAnalyzeFrame = async () => {
     }
     
   } catch (error) {
-    console.error('Pose analysis failed:', error)
+    console.error('❌ Pose analysis failed:', error)
+    console.error('Error details:', error.response?.data || error.message)
   }
 }
 
