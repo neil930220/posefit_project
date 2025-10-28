@@ -345,12 +345,14 @@ const startRealTimeDetection = () => {
   console.log('🎬 開始即時檢測...')
   isRealTimeDetection.value = true
   
-  // 每 300ms 檢測一次（約 3-4 FPS），平衡流暢度和伺服器負載
+  // 每 200ms 檢測一次（約 5 FPS），提升連續性
   analysisInterval = setInterval(() => {
-    if (isRealTimeDetection.value) {
+    if (isRealTimeDetection.value && !isProcessing) {
       captureAndAnalyzeFrame()
+    } else if (isProcessing) {
+      console.log('⏳ Previous request still processing, skipping...')
     }
-  }, 300)
+  }, 200)
   
   // 立即執行第一次檢測
   captureAndAnalyzeFrame()
@@ -368,14 +370,15 @@ const stopRealTimeDetection = () => {
 let isProcessing = false  // 防止重複請求
 
 const captureAndAnalyzeFrame = async () => {
-  // 防止重複請求
-  if (isProcessing) {
-    console.log('⏳ Already processing, skipping this frame...')
+  // 檢查是否應該繼續
+  if (!isCameraOn.value || !videoElement.value || !isRealTimeDetection.value) {
+    console.warn('⚠️ Camera not ready or detection stopped')
     return
   }
   
-  if (!isCameraOn.value || !videoElement.value || !isRealTimeDetection.value) {
-    console.warn('⚠️ Camera not ready or detection stopped')
+  // 不阻止執行，而是在處理時跳過
+  if (isProcessing) {
+    console.log('⏳ Already processing, skipping this frame...')
     return
   }
   
@@ -414,7 +417,8 @@ const captureAndAnalyzeFrame = async () => {
     const response = await api.post('api/exercise/analyze-pose/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      timeout: 5000  // 5秒超時，避免無限等待
     })
     
     console.log('✅ Response received:', response.data)
@@ -437,7 +441,8 @@ const captureAndAnalyzeFrame = async () => {
     console.error('❌ Pose analysis failed:', error)
     console.error('Error details:', error.response?.data || error.message)
     
-    // 繼續執行，不要停止檢測
+    // 確保幀數增加，即使失敗也要繼續
+    frameCount.value++
     console.log('🔄 Continuing detection despite error...')
   } finally {
     isProcessing = false
