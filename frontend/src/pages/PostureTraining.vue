@@ -345,12 +345,12 @@ const startRealTimeDetection = () => {
   console.log('🎬 開始即時檢測...')
   isRealTimeDetection.value = true
   
-  // 每 100ms 檢測一次（約 10 FPS），提高流暢度
+  // 每 300ms 檢測一次（約 3-4 FPS），平衡流暢度和伺服器負載
   analysisInterval = setInterval(() => {
     if (isRealTimeDetection.value) {
       captureAndAnalyzeFrame()
     }
-  }, 100)
+  }, 300)
   
   // 立即執行第一次檢測
   captureAndAnalyzeFrame()
@@ -392,8 +392,8 @@ const captureAndAnalyzeFrame = async () => {
     const ctx = canvas.getContext('2d')
     ctx.drawImage(videoElement.value, 0, 0)
     
-    // Convert to base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.5)
+    // Convert to base64 - 降低質量以提升速度
+    const imageData = canvas.toDataURL('image/jpeg', 0.6)
     
     console.log('📤 Sending to API...')
     

@@ -76,12 +76,13 @@ class OpenPoseDetector:
                 self.mp_pose = mp.solutions.pose
                 self.pose = self.mp_pose.Pose(
                     static_image_mode=False,
-                    model_complexity=1,
+                    model_complexity=0,  # 使用最輕量級模型，提升速度
                     enable_segmentation=False,
-                    min_detection_confidence=0.5,
-                    min_tracking_confidence=0.5
+                    smooth_landmarks=True,
+                    min_detection_confidence=0.4,  # 降低檢測門檻，更快響應
+                    min_tracking_confidence=0.4   # 降低追蹤門檻，更快響應
                 )
-                logger.info("MediaPipe Pose model loaded successfully")
+                logger.info("MediaPipe Pose model loaded successfully (lightweight mode)")
             else:
                 logger.warning("MediaPipe not available, using HOG fallback")
                 self.pose = None
