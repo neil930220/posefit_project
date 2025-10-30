@@ -59,12 +59,12 @@ urlpatterns = [
     path('api/password_reset/confirm',csrf_exempt(ResetPasswordConfirm.as_view()),name='password_reset_confirm'),
 ]
 
-if settings.DEBUG:
-    # 1) Serve /media/ from disk
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Always serve /media/ files via Django. In production, prefer a real web server or object storage.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-#    This must come *after* static(). Otherwise it intercepts /media/ too.
-urlpatterns += [
-    re_path(r'^.*$', FrontendAppView.as_view()),
-]
+# Only serve the SPA index fallback during development. In production the frontend is hosted separately.
+if settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^.*$', FrontendAppView.as_view()),
+    ]
 
