@@ -85,13 +85,6 @@ def analyze_pose(request):
         pose_detector = get_pose_detector()
         pose_result = pose_detector.detect_pose(frame)
         
-        # 在影像上繪製姿勢骨架
-        frame_with_pose = pose_detector.draw_pose(frame.copy(), pose_result['keypoints'])
-        
-        # 將影像轉換為 base64
-        _, buffer = cv2.imencode('.jpg', frame_with_pose)
-        frame_base64 = base64.b64encode(buffer).decode('utf-8')
-        
         # 生成回饋建議
         feedback = pose_detector.get_pose_feedback(
             pose_result['keypoints'], 
@@ -132,7 +125,7 @@ def analyze_pose(request):
             except ExerciseSession.DoesNotExist:
                 pass
         
-        # 準備回應資料
+        # 準備回應資料（只返回關鍵點，不返回圖片）
         response_data = {
             'pose_analysis_id': pose_analysis.id if pose_analysis else None,
             'keypoints': pose_result['keypoints'],
@@ -141,8 +134,7 @@ def analyze_pose(request):
             'detected_errors': pose_result['detected_errors'],
             'ai_feedback': feedback,
             'timestamp': pose_result['timestamp'],
-            'frame_number': frame_number,
-            'annotated_image': f'data:image/jpeg;base64,{frame_base64}'  # 帶有姿勢繪製的影像
+            'frame_number': frame_number
         }
         
         return Response(response_data, status=status.HTTP_200_OK)

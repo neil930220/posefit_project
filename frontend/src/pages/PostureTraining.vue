@@ -426,8 +426,8 @@ const captureAndAnalyzeFrame = async () => {
     currentAnalysis.value = response.data
     frameCount.value++
     
-    // Draw pose on canvas with annotated image (REALTIME)
-    drawPoseOnCanvas(response.data.keypoints, response.data.annotated_image)
+    // Draw pose on canvas with keypoints only (REALTIME)
+    drawPoseOnCanvas(response.data.keypoints)
     
     console.log(`🎯 Detected ${response.data.keypoints?.length || 0} keypoints, Frame: ${frameCount.value}`)
     
@@ -454,7 +454,7 @@ const captureFrame = async () => {
   await captureAndAnalyzeFrame()
 }
 
-const drawPoseOnCanvas = (keypoints, annotatedImage) => {
+const drawPoseOnCanvas = (keypoints) => {
   if (!poseCanvas.value) return
   
   const canvas = poseCanvas.value
@@ -463,36 +463,24 @@ const drawPoseOnCanvas = (keypoints, annotatedImage) => {
   // 完全清除 canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   
-  // 如果有帶註釋的影像（從後端返回的帶有繪製的影像）
-  if (annotatedImage) {
-    const img = new Image()
-    img.onload = () => {
-      // 先清除
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      // 繪製帶有骨架的影像
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    }
-    img.src = annotatedImage
-    return
-  }
-  
-  // 如果沒有帶註釋的影像，手動繪製（備用方案）
+  // 如果沒有關鍵點，直接返回
   if (!keypoints || keypoints.length === 0) {
     return
   }
   
-  // MediaPipe Pose 連接
+  // MediaPipe Pose 連接（33個關鍵點）
   const connections = [
-    // Face
     [0, 1], [1, 2], [2, 3], [3, 7],
-    // Upper body
     [0, 4], [4, 5], [5, 6], [6, 8],
-    [0, 7], [7, 9], [9, 10], [10, 11],
-    [11, 12], [12, 13], [13, 14], [14, 15],
-    [12, 17], [11, 18],
-    // Lower body
-    [17, 19], [19, 21], [21, 23], [23, 25],
-    [18, 20], [20, 22], [22, 24], [24, 26]
+    [9, 10], [11, 12],
+    [11, 13], [13, 15], [15, 17], [17, 19], [19, 15],
+    [12, 14], [14, 16], [16, 18], [18, 20], [20, 16],
+    [15, 21], [16, 22],
+    [11, 23], [12, 24],
+    [23, 24],
+    [23, 25], [24, 26],
+    [25, 27], [27, 29], [29, 31], [31, 27],
+    [26, 28], [28, 30], [30, 32], [32, 28]
   ]
   
   // 先繪製骨架連接
@@ -505,7 +493,7 @@ const drawPoseOnCanvas = (keypoints, annotatedImage) => {
         ctx.beginPath()
         ctx.moveTo(kp1.x * canvas.width, kp1.y * canvas.height)
         ctx.lineTo(kp2.x * canvas.width, kp2.y * canvas.height)
-        ctx.strokeStyle = '#ff0080'  // 洋紅色
+        ctx.strokeStyle = '#FF0080'  // 洋紅色線條
         ctx.lineWidth = 4
         ctx.stroke()
       }
@@ -518,16 +506,16 @@ const drawPoseOnCanvas = (keypoints, annotatedImage) => {
       const x = kp.x * canvas.width
       const y = kp.y * canvas.height
       
-      // 外圈（較大，綠色）
+      // 外圈（較大，亮綠色）
       ctx.beginPath()
-      ctx.arc(x, y, 10, 0, 2 * Math.PI)
-      ctx.fillStyle = '#00ff00'
+      ctx.arc(x, y, 8, 0, 2 * Math.PI)
+      ctx.fillStyle = '#00FF00'
       ctx.fill()
       
       // 內圈（較小，深綠色）
       ctx.beginPath()
-      ctx.arc(x, y, 5, 0, 2 * Math.PI)
-      ctx.fillStyle = '#00cc00'
+      ctx.arc(x, y, 4, 0, 2 * Math.PI)
+      ctx.fillStyle = '#00AA00'
       ctx.fill()
     }
   })
