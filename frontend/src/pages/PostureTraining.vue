@@ -345,14 +345,14 @@ const startRealTimeDetection = () => {
   console.log('🎬 開始即時檢測...')
   isRealTimeDetection.value = true
   
-  // 每 100ms 檢測一次（約 10 FPS），高流暢度
+  // 每 50ms 檢測一次（約 20 FPS），超高流暢度
   analysisInterval = setInterval(() => {
     if (isRealTimeDetection.value && !isProcessing) {
       captureAndAnalyzeFrame()
     } else if (isProcessing) {
       console.log('⏳ Previous request still processing, skipping...')
     }
-  }, 100)
+  }, 50)
   
   // 立即執行第一次檢測
   captureAndAnalyzeFrame()
@@ -396,7 +396,7 @@ const captureAndAnalyzeFrame = async () => {
     ctx.drawImage(videoElement.value, 0, 0)
     
     // Convert to base64 - 降低質量以提升速度
-    const imageData = canvas.toDataURL('image/jpeg', 0.4)
+    const imageData = canvas.toDataURL('image/jpeg', 0.3)
     
     console.log('📤 Sending to API...')
     
@@ -418,7 +418,7 @@ const captureAndAnalyzeFrame = async () => {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      timeout: 3000  // 3秒超時，避免無限等待
+      timeout: 2000  // 2秒超時，快速響應
     })
     
     console.log('✅ Response received:', response.data)
