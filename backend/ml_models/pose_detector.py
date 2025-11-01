@@ -40,21 +40,8 @@ class OpenPoseDetector:
         self.keypoints = None
         self.confidence_threshold = 0.3
         
-        # MediaPipe Pose 連接
-        self.POSE_CONNECTIONS = [
-            (11, 12),  # Left shoulder to Right shoulder
-            (11, 13),  # Left shoulder to Left elbow
-            (13, 15),  # Left elbow to Left wrist
-            (12, 14),  # Right shoulder to Right elbow
-            (14, 16),  # Right elbow to Right wrist
-            (11, 23),  # Left shoulder to Left hip
-            (12, 24),  # Right shoulder to Right hip
-            (23, 24),  # Left hip to Right hip
-            (23, 25),  # Left hip to Left knee
-            (24, 26),  # Right hip to Right knee
-            (25, 27),  # Left knee to Left ankle
-            (26, 28),  # Right knee to Right ankle
-        ]
+        # MediaPipe Pose 連接（使用 MediaPipe 官方定義）
+        self.POSE_CONNECTIONS = None  # MediaPipe 會自動處理
         
         # 關鍵點名稱 (MediaPipe - 33個關鍵點)
         self.KEYPOINT_NAMES = [
@@ -64,7 +51,7 @@ class OpenPoseDetector:
             "LIndex", "RIndex", "LThumb", "RThumb",
             "LHip", "RHip", "LKnee", "RKnee",
             "LAnkle", "RAnkle", "LHeel", "RHeel",
-            "LFootIndex", "RFootIndex", "Navel", "Chest"
+            "LFootIndex", "RFootIndex"
         ]
         
         self._load_model()
@@ -300,28 +287,16 @@ class OpenPoseDetector:
         return False
     
     def draw_pose(self, frame: np.ndarray, keypoints: List[Dict]) -> np.ndarray:
-        """在影像上繪製姿勢骨架"""
+        """
+        在影像上繪製姿勢骨架
+        
+        注意：此方法現在主要用於測試，實際生產環境中前端會直接繪製
+        """
         if not keypoints:
             return frame
         
-        # 繪製骨架連接（先畫線，這樣點會在上面）
-        for pair in self.POSE_CONNECTIONS:
-            if pair[0] < len(keypoints) and pair[1] < len(keypoints):
-                kp1 = keypoints[pair[0]]
-                kp2 = keypoints[pair[1]]
-                
-                if (kp1.get('confidence', 0) > self.confidence_threshold and 
-                    kp2.get('confidence', 0) > self.confidence_threshold):
-                    
-                    x1 = int(kp1['x'] * frame.shape[1])
-                    y1 = int(kp1['y'] * frame.shape[0])
-                    x2 = int(kp2['x'] * frame.shape[1])
-                    y2 = int(kp2['y'] * frame.shape[0])
-                    
-                    # 使用較粗的線條，顏色為藍色
-                    cv2.line(frame, (x1, y1), (x2, y2), (255, 100, 0), 3)
-        
-        # 繪製關鍵點（較大的圓點）
+        # 簡化版的繪製
+        # 繪製關鍵點
         for kp in keypoints:
             if kp.get('confidence', 0) > self.confidence_threshold:
                 x = int(kp['x'] * frame.shape[1])
