@@ -314,9 +314,9 @@
               <div class="pt-2 text-right">
                 <button
                   class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                  :disabled="loading || !file"
+                  :disabled="loading || !file || historySaved"
                   @click="saveHistory"
-                >儲存到歷史</button>
+                >{{ historySaved ? '已儲存到歷史' : '儲存到歷史' }}</button>
               </div>
             </div>
             <div v-else class="text-gray-500">完成分析後可編輯並儲存</div>
@@ -407,6 +407,7 @@ const error = ref(null)
 // Editable state derived from result
 const editableDetections = ref([])
 const editedTotalCalories = ref(0)
+const historySaved = ref(false)
 
 const progressWidth = computed(() => {
   if (step.value === 1) return '33%'
@@ -519,7 +520,7 @@ async function onSubmit() {
       step.value = 3
       // Initialize editable fields after result ready
       initializeEditableFields()
-      await saveHistory()
+      // No automatic save - user must manually click "儲存到歷史"
     }
   } catch (err) {
     console.error('Upload error:', err)
@@ -558,6 +559,7 @@ async function saveHistory() {
         'Content-Type': 'multipart/form-data'
       }
     })
+    historySaved.value = true
   } catch (err) {
     console.error('History save error:', err.response?.data || err.message)
   }
@@ -569,6 +571,7 @@ function reset() {
   result.value = null
   loading.value = false
   error.value = null
+  historySaved.value = false
   if (imageInput.value) imageInput.value.value = ''
 }
 
