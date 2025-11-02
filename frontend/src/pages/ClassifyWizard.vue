@@ -82,6 +82,52 @@
 
         <GuessGame v-model="guessKcal" :disabled="loading" />
 
+        <div class="mt-6">
+          <div class="text-gray-300 mb-2">也猜猜各營養素（克）</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">碳水化合物</label>
+              <input
+                type="number"
+                min="0"
+                class="w-full px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                v-model.number="guessCarbs"
+                :disabled="loading"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">蛋白質</label>
+              <input
+                type="number"
+                min="0"
+                class="w-full px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                v-model.number="guessProtein"
+                :disabled="loading"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">脂肪</label>
+              <input
+                type="number"
+                min="0"
+                class="w-full px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                v-model.number="guessFat"
+                :disabled="loading"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">膳食纖維</label>
+              <input
+                type="number"
+                min="0"
+                class="w-full px-3 py-2 rounded bg-[#1e2021] text-gray-200 border border-gray-700"
+                v-model.number="guessFiber"
+                :disabled="loading"
+              />
+            </div>
+          </div>
+        </div>
+
         <div class="mt-6 flex justify-between">
           <button
             class="px-6 py-2 border border-gray-600 text-gray-200 rounded-lg hover:bg-[#1e2021] transition"
@@ -206,27 +252,6 @@
 
         <!-- Right: Results + Guess comparison -->
         <div class="flex flex-col h-[800px]">
-          <div class="bg-[#2a2b2c] rounded-xl shadow-lg p-6 flex-1">
-            <h2 class="text-2xl font-semibold text-white mb-4">預測結果</h2>
-            <div v-if="result">
-              <h3 class="text-lg font-semibold text-gray-200 mb-3">檢測到的食物</h3>
-              <div class="space-y-2 mb-4">
-                <div v-if="filteredPredictions.length === 0" class="text-gray-400">目前沒有高信心項目</div>
-                <div v-for="pred in filteredPredictions" :key="pred.name" class="flex justify-between text-gray-200 text-lg">
-                  <span>{{ pred.name }}</span>
-                  <span class="font-medium">{{ (pred.confidence * 100).toFixed(1) }}%</span>
-                </div>
-              </div>
-              <div class="pt-4 border-t border-gray-600">
-                <div class="flex justify-between text-gray-200 text-lg">
-                  <span>食物面積比</span>
-                  <span class="font-medium">{{ result.ratio }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-gray-500">尚未有預測</div>
-          </div>
-
           <!-- Editable fields for detections and calories -->
           <div class="bg-[#2a2b2c] rounded-xl shadow-lg p-6 mt-6">
             <h2 class="text-xl font-semibold text-white mb-4">編輯並儲存到歷史</h2>
@@ -313,6 +338,32 @@
                 <div class="text-2xl font-bold mt-1">{{ calorieDelta }} kcal</div>
               </div>
             </div>
+            <div v-if="result" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center text-gray-200">
+              <div class="bg-[#1e2021] rounded-lg p-4">
+                <div class="text-sm text-gray-400">碳水化合物</div>
+                <div class="text-lg font-semibold mt-1">猜：{{ guessCarbs }} 克</div>
+                <div class="text-lg font-semibold">結果：{{ actualCarbs }} 克</div>
+                <div class="text-sm text-gray-400 mt-1">差距：{{ carbsDelta }} 克</div>
+              </div>
+              <div class="bg-[#1e2021] rounded-lg p-4">
+                <div class="text-sm text-gray-400">蛋白質</div>
+                <div class="text-lg font-semibold mt-1">猜：{{ guessProtein }} 克</div>
+                <div class="text-lg font-semibold">結果：{{ actualProtein }} 克</div>
+                <div class="text-sm text-gray-400 mt-1">差距：{{ proteinDelta }} 克</div>
+              </div>
+              <div class="bg-[#1e2021] rounded-lg p-4">
+                <div class="text-sm text-gray-400">脂肪</div>
+                <div class="text-lg font-semibold mt-1">猜：{{ guessFat }} 克</div>
+                <div class="text-lg font-semibold">結果：{{ actualFat }} 克</div>
+                <div class="text-sm text-gray-400 mt-1">差距：{{ fatDelta }} 克</div>
+              </div>
+              <div v-if="result?.nutrition?.fiber !== undefined" class="bg-[#1e2021] rounded-lg p-4">
+                <div class="text-sm text-gray-400">膳食纖維</div>
+                <div class="text-lg font-semibold mt-1">猜：{{ guessFiber }} 克</div>
+                <div class="text-lg font-semibold">結果：{{ actualFiber }} 克</div>
+                <div class="text-sm text-gray-400 mt-1">差距：{{ fiberDelta }} 克</div>
+              </div>
+            </div>
             <div v-else class="text-gray-500">完成分析後會顯示比較結果</div>
           </div>
 
@@ -342,6 +393,10 @@ const step = ref(1)
 const file = ref(null)
 const previewUrl = ref(null)
 const guessKcal = ref(400)
+const guessCarbs = ref(0)
+const guessProtein = ref(0)
+const guessFat = ref(0)
+const guessFiber = ref(0)
 const loading = ref(false)
 const result = ref(null)
 const isDragging = ref(false)
@@ -368,6 +423,16 @@ const calorieDelta = computed(() => {
   const delta = Math.abs((finalCalories.value || 0) - (guessKcal.value || 0))
   return Math.round(delta)
 })
+
+const actualCarbs = computed(() => (result.value?.nutrition?.carbs ?? 0))
+const actualProtein = computed(() => (result.value?.nutrition?.protein ?? 0))
+const actualFat = computed(() => (result.value?.nutrition?.fat ?? 0))
+const actualFiber = computed(() => (result.value?.nutrition?.fiber ?? 0))
+
+const carbsDelta = computed(() => Math.round(Math.abs((guessCarbs.value || 0) - (actualCarbs.value || 0))))
+const proteinDelta = computed(() => Math.round(Math.abs((guessProtein.value || 0) - (actualProtein.value || 0))))
+const fatDelta = computed(() => Math.round(Math.abs((guessFat.value || 0) - (actualFat.value || 0))))
+const fiberDelta = computed(() => Math.round(Math.abs((guessFiber.value || 0) - (actualFiber.value || 0))))
 
 const chartData = computed(() => {
   if (!result.value?.nutrition) return null
@@ -510,6 +575,10 @@ function reset() {
 function restart() {
   reset()
   guessKcal.value = 400
+  guessCarbs.value = 0
+  guessProtein.value = 0
+  guessFat.value = 0
+  guessFiber.value = 0
   step.value = 1
 }
 
