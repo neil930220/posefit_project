@@ -84,7 +84,6 @@ server {
         alias /app/backend/staticfiles/;
         expires 30d;
         add_header Cache-Control "public, immutable";
-        add_header 'Access-Control-Allow-Origin' 'https://posefit-project-frontend.zeabur.app' always;
     }
 
     # 媒體檔案
@@ -92,23 +91,11 @@ server {
         alias /app/backend/media/;
         expires 7d;
         add_header Cache-Control "public";
-        add_header 'Access-Control-Allow-Origin' 'https://posefit-project-frontend.zeabur.app' always;
     }
 
     # Django 應用
     location / {
-        # CORS 響應頭
-        add_header 'Access-Control-Allow-Origin' 'https://posefit-project-frontend.zeabur.app' always;
-        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, X-Requested-With, Accept' always;
-        add_header 'Access-Control-Allow-Credentials' 'true' always;
-        add_header 'Access-Control-Max-Age' '86400' always;
-
-        # 處理 OPTIONS 預檢請求
-        if ($request_method = 'OPTIONS') {
-            return 204;
-        }
-
+        # Django CORS middleware will handle CORS headers
         proxy_pass http://django;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
