@@ -95,14 +95,22 @@ class LogoutView(auth_views.LogoutView):
 from django.contrib.auth.decorators import login_required
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework import status
 from .serializers import UserSerializer
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])  # Allow anyone to access, but check auth inside
 def current_user(request):
+    # Check if user is authenticated
+    if not request.user or not request.user.is_authenticated:
+        return Response(
+            {'detail': 'Authentication credentials were not provided.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
     serializer = UserSerializer(request.user)
     return Response(serializer.data)    
 
