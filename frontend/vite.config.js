@@ -14,6 +14,10 @@ export default defineConfig({
       }
     }
   },
+  define: {
+    '__DEFINES__': JSON.stringify({}),
+    'process.env': {}
+  },
   server: {
     https: false,   // disable HTTPS
     host: '0.0.0.0', // Allow external connections
