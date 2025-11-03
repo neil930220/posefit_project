@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
+  <div class="min-h-screen bg-gray-50 p-6 pb-24">
     <div class="max-w-5xl mx-auto">
       <!-- Progress Header -->
       <div class="flex items-center justify-between mb-6">
