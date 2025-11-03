@@ -63,6 +63,7 @@ WORKDIR /app
 
 # 從建置階段複製 Python 依賴和應用
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app /app
 
 # 建立 Nginx 配置（包含 CORS 支持）
