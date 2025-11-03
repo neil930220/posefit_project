@@ -1,6 +1,6 @@
 {
-  "build_command": "cd backend && pip install -r requirements/production.txt && python manage.py collectstatic --noinput",
-  "start_command": "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT",
+  "build_command": "cd backend && pip install -r requirements/production.txt && DJANGO_SETTINGS_MODULE=config.settings.production python manage.py collectstatic --noinput",
+  "start_command": "cd backend && DJANGO_SETTINGS_MODULE=config.settings.production python manage.py migrate --noinput && DJANGO_SETTINGS_MODULE=config.settings.production gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --access-logfile - --error-logfile -",
   "python_version": "3.12"
 }
 

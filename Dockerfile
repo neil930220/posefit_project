@@ -95,16 +95,20 @@ server {
 
     # Django 應用
     location / {
-        # Django CORS middleware will handle CORS headers
+        # Let Django CORS middleware handle all CORS headers
         proxy_pass http://django;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Origin $http_origin;
         proxy_redirect off;
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
+        
+        # Don't buffer responses to ensure CORS headers are sent immediately
+        proxy_buffering off;
     }
 }
 NGINX_EOF

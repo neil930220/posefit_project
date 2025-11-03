@@ -21,6 +21,9 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
 
+# Ensure CORS is not allowing all origins (security best practice)
+CORS_ALLOW_ALL_ORIGINS = False
+
 # Additional CORS settings for proper preflight handling
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -42,6 +45,9 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Preflight request cache time (20 days)
+CORS_PREFLIGHT_MAX_AGE = 86400 * 20
 
 # Log CORS settings for debugging (will appear in Zeabur logs)
 print(f"🔒 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
