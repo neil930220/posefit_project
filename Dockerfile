@@ -58,6 +58,8 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
+    
+RUN pip install --no-cache-dir gunicorn
 
 WORKDIR /app
 
