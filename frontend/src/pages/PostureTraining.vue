@@ -285,9 +285,12 @@ onUnmounted(() => {
 const loadExerciseTypes = async () => {
   try {
     const response = await api.get('api/exercise/exercise-types/')
+    console.log('📋 Loaded exercise types:', response.data)
     exerciseTypes.value = response.data
+    console.log('✅ Exercise types loaded successfully, count:', exerciseTypes.value.length)
+    console.log('📝 Available exercises:', exerciseTypes.value.map(e => e.name).join(', '))
   } catch (error) {
-    console.error('Failed to load exercise types:', error)
+    console.error('❌ Failed to load exercise types:', error)
   }
 }
 
