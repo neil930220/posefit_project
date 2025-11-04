@@ -252,8 +252,27 @@ let animationId = null
 let isRealTimeDetection = ref(false)
 let analysisInterval = null
 
+// Reusable canvas for frame capture (optimization)
+let captureCanvas = null
+let captureCtx = null
+
+// Base64 to Blob conversion function (optimized, avoids slow fetch)
+function base64ToBlob(base64, mimeType = 'image/jpeg') {
+  const byteCharacters = atob(base64.split(',')[1])
+  const byteNumbers = new Array(byteCharacters.length)
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i)
+  }
+  const byteArray = new Uint8Array(byteNumbers)
+  return new Blob([byteArray], { type: mimeType })
+}
+
 // Lifecycle
 onMounted(async () => {
+  // Initialize reusable capture canvas (optimization)
+  captureCanvas = document.createElement('canvas')
+  captureCtx = captureCanvas.getContext('2d')
+  
   await loadExerciseTypes()
   await initCamera()
 })
@@ -387,25 +406,27 @@ const captureAndAnalyzeFrame = async () => {
   try {
     console.log(`📸 Capturing frame #${frameCount.value}...`)
     
-    // Capture frame from video
-    const canvas = document.createElement('canvas')
-    canvas.width = videoElement.value.videoWidth
-    canvas.height = videoElement.value.videoHeight
+    // OPTIMIZATION: Use reusable canvas and reduce image size (320x240 for faster processing)
+    const targetWidth = 320  // Reduced from 640 (50% smaller)
+    const targetHeight = 240  // Reduced from 480 (50% smaller)
     
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(videoElement.value, 0, 0)
+    // Set canvas dimensions (reuse existing canvas)
+    captureCanvas.width = targetWidth
+    captureCanvas.height = targetHeight
     
-    // Convert to base64 - 降低質量以提升速度
-    const imageData = canvas.toDataURL('image/jpeg', 0.3)
+    // Draw video frame scaled down to target size
+    captureCtx.drawImage(videoElement.value, 0, 0, targetWidth, targetHeight)
+    
+    // Convert to base64 - OPTIMIZATION: Lower quality (0.2) for faster encoding
+    const imageData = captureCanvas.toDataURL('image/jpeg', 0.2)
     
     console.log('📤 Sending to API...')
     
     // Create FormData for multipart/form-data
     const formData = new FormData()
     
-    // Convert base64 to Blob
-    const base64Data = imageData.split(',')[1]
-    const blob = await fetch(imageData).then(r => r.blob())
+    // OPTIMIZATION: Use fast base64ToBlob instead of slow fetch()
+    const blob = base64ToBlob(imageData, 'image/jpeg')
     formData.append('image', blob, 'frame.jpg')
     formData.append('exercise_type', getExerciseTypeName(selectedExerciseType.value))
     if (currentSession.value?.id) {
@@ -418,7 +439,7 @@ const captureAndAnalyzeFrame = async () => {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      timeout: 2000  // 2秒超時，快速響應
+      timeout: 1500  // OPTIMIZATION: Reduced from 2000ms to 1500ms
     })
     
     console.log('✅ Response received:', response.data)
