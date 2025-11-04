@@ -285,12 +285,38 @@ onUnmounted(() => {
 const loadExerciseTypes = async () => {
   try {
     const response = await api.get('api/exercise/exercise-types/')
-    console.log('📋 Loaded exercise types:', response.data)
-    exerciseTypes.value = response.data
+    console.log('📋 API Response:', response)
+    console.log('📋 Response data:', response.data)
+    console.log('📋 Response data type:', typeof response.data)
+    console.log('📋 Is array?', Array.isArray(response.data))
+    
+    // Handle both array and paginated response
+    let types = response.data
+    if (response.data && response.data.results) {
+      // Paginated response
+      types = response.data.results
+      console.log('📄 Detected paginated response, using results:', types)
+    } else if (Array.isArray(response.data)) {
+      // Direct array response
+      types = response.data
+      console.log('📋 Detected array response:', types)
+    } else {
+      console.warn('⚠️ Unexpected response format:', response.data)
+      types = []
+    }
+    
+    exerciseTypes.value = types
     console.log('✅ Exercise types loaded successfully, count:', exerciseTypes.value.length)
-    console.log('📝 Available exercises:', exerciseTypes.value.map(e => e.name).join(', '))
+    if (exerciseTypes.value.length > 0) {
+      console.log('📝 Available exercises:', exerciseTypes.value.map(e => e.name || e).join(', '))
+      console.log('📝 Exercise IDs:', exerciseTypes.value.map(e => e.id || 'no-id').join(', '))
+    } else {
+      console.warn('⚠️ No exercise types found!')
+    }
   } catch (error) {
     console.error('❌ Failed to load exercise types:', error)
+    console.error('❌ Error details:', error.response?.data || error.message)
+    exerciseTypes.value = []
   }
 }
 
