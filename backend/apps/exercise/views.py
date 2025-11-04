@@ -81,9 +81,9 @@ def analyze_pose(request):
         # 轉換為 OpenCV 格式
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
         
-        # 執行姿勢檢測
+        # 執行姿勢檢測（傳入運動類型以計算動作接近程度的分數）
         pose_detector = get_pose_detector()
-        pose_result = pose_detector.detect_pose(frame)
+        pose_result = pose_detector.detect_pose(frame, exercise_type=exercise_type)
         
         # 生成回饋建議
         feedback = pose_detector.get_pose_feedback(

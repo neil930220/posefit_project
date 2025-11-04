@@ -77,12 +77,13 @@ class OpenPoseDetector:
             logger.error(f"Failed to load MediaPipe model: {e}")
             self.pose = None
     
-    def detect_pose(self, frame: np.ndarray) -> Dict:
+    def detect_pose(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
         """
         檢測單一幀的姿勢
         
         Args:
             frame: 輸入影像幀 (BGR 格式)
+            exercise_type: 運動類型（用於計算動作接近程度的分數）
             
         Returns:
             包含關鍵點和姿勢資訊的字典
@@ -90,15 +91,15 @@ class OpenPoseDetector:
         try:
             # 優先使用 MediaPipe
             if self.pose is not None:
-                return self._mediapipe_detection(frame)
+                return self._mediapipe_detection(frame, exercise_type)
             else:
                 # 備用 HOG 檢測
-                return self._simple_pose_detection(frame)
+                return self._simple_pose_detection(frame, exercise_type)
         except Exception as e:
             logger.error(f"Pose detection failed: {e}")
-            return self._fallback_pose_detection(frame)
+            return self._fallback_pose_detection(frame, exercise_type)
     
-    def _mediapipe_detection(self, frame: np.ndarray) -> Dict:
+    def _mediapipe_detection(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
         """使用 MediaPipe 進行姿勢檢測"""
         # MediaPipe 需要 RGB 格式
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -117,19 +118,22 @@ class OpenPoseDetector:
                     'confidence': landmark.visibility
                 })
             
+            # 根據運動類型計算動作接近程度的分數
+            pose_score, confidence = self._calculate_exercise_pose_score(keypoints, exercise_type)
+            
             return {
                 'keypoints': keypoints,
-                'confidence': self._calculate_confidence(keypoints),
-                'pose_score': self._calculate_pose_score(keypoints),
+                'confidence': confidence,  # 動作接近程度的信心度
+                'pose_score': pose_score,  # 基於動作接近程度的分數
                 'detected_errors': self._detect_pose_errors(keypoints),
                 'timestamp': cv2.getTickCount() / cv2.getTickFrequency()
             }
         else:
             # 沒檢測到人體，使用 HOG 備用
             logger.info("MediaPipe no detection, using HOG fallback")
-            return self._simple_pose_detection(frame)
+            return self._simple_pose_detection(frame, exercise_type)
     
-    def _simple_pose_detection(self, frame: np.ndarray) -> Dict:
+    def _simple_pose_detection(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
         """簡化的姿勢檢測"""
         # 使用多種方法提高檢測準確度
         boxes = []
@@ -164,23 +168,23 @@ class OpenPoseDetector:
         largest_box = max(boxes, key=lambda x: x[2] * x[3])
         keypoints = self._estimate_keypoints_from_box(largest_box, frame.shape)
         
-        # 根據是否檢測到人體調整信心度
-        confidence = 0.7 if len(boxes) > 0 else 0.5
+        # 根據運動類型計算動作接近程度的分數
+        pose_score, confidence = self._calculate_exercise_pose_score(keypoints, exercise_type)
         
         return {
             'keypoints': keypoints,
-            'confidence': confidence,
-            'pose_score': self._calculate_pose_score(keypoints),
+            'confidence': confidence,  # 動作接近程度的信心度
+            'pose_score': pose_score,  # 基於動作接近程度的分數
             'detected_errors': self._detect_pose_errors(keypoints) if confidence > 0.6 else ['使用預設人體框，請確保全身在鏡頭中央'],
             'timestamp': cv2.getTickCount() / cv2.getTickFrequency()
         }
     
-    def _fallback_pose_detection(self, frame: np.ndarray) -> Dict:
+    def _fallback_pose_detection(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
         """
         備用姿勢檢測方法
         """
         try:
-            return self._simple_pose_detection(frame)
+            return self._simple_pose_detection(frame, exercise_type)
         except Exception as e:
             logger.error(f"Fallback pose detection failed: {e}")
             return {
@@ -237,7 +241,7 @@ class OpenPoseDetector:
         return sum(confidences) / len(confidences)
     
     def _calculate_pose_score(self, keypoints: List[Dict]) -> float:
-        """計算姿勢分數"""
+        """計算姿勢分數（舊方法，基於關鍵點可見性）"""
         if not keypoints:
             return 0.0
         
@@ -253,6 +257,142 @@ class OpenPoseDetector:
         pose_score = (visibility_score + confidence_score) / 2
         
         return min(100.0, max(0.0, pose_score))
+    
+    def _calculate_exercise_pose_score(self, keypoints: List[Dict], exercise_type: str) -> Tuple[float, float]:
+        """
+        根據運動類型計算動作接近程度的分數和信心度
+        
+        Args:
+            keypoints: 關鍵點列表
+            exercise_type: 運動類型名稱（如 "舉重", "深蹲", "伏地挺身" 等）
+            
+        Returns:
+            (pose_score, confidence) 元組
+            - pose_score: 基於動作接近程度的分數 (0-100)
+            - confidence: 動作接近程度的信心度 (0-1)
+        """
+        if not keypoints:
+            return (0.0, 0.0)
+        
+        # 檢查關鍵點的可見性（基礎檢查）
+        visible_keypoints = [kp for kp in keypoints if kp.get('confidence', 0) > 0.3]
+        if len(visible_keypoints) < 5:
+            return (0.0, 0.0)  # 關鍵點不足，無法評分
+        
+        # 根據運動類型選擇評分邏輯
+        exercise_type_lower = exercise_type.lower()
+        
+        if "舉重" in exercise_type or "weightlifting" in exercise_type_lower or "weight" in exercise_type_lower:
+            return self._calculate_weightlifting_score(keypoints)
+        elif "深蹲" in exercise_type or "squat" in exercise_type_lower:
+            # 深蹲評分邏輯（可以之後實現）
+            return self._calculate_general_score(keypoints)
+        elif "伏地挺身" in exercise_type or "pushup" in exercise_type_lower or "push-up" in exercise_type_lower:
+            # 伏地挺身評分邏輯（可以之後實現）
+            return self._calculate_general_score(keypoints)
+        else:
+            # 一般運動，使用通用評分
+            return self._calculate_general_score(keypoints)
+    
+    def _calculate_weightlifting_score(self, keypoints: List[Dict]) -> Tuple[float, float]:
+        """
+        計算舉重姿勢分數
+        評分標準：上半身手保持垂直角度（肩膀到手腕接近90度）
+        
+        Returns:
+            (pose_score, confidence) 元組
+        """
+        # 找到需要的關鍵點
+        left_shoulder = next((kp for kp in keypoints if kp.get('name') == 'LShoulder'), None)
+        right_shoulder = next((kp for kp in keypoints if kp.get('name') == 'RShoulder'), None)
+        left_wrist = next((kp for kp in keypoints if kp.get('name') == 'LWrist'), None)
+        right_wrist = next((kp for kp in keypoints if kp.get('name') == 'RWrist'), None)
+        left_elbow = next((kp for kp in keypoints if kp.get('name') == 'LElbow'), None)
+        right_elbow = next((kp for kp in keypoints if kp.get('name') == 'RElbow'), None)
+        
+        # 檢查關鍵點是否可用（信心度 > 0.3）
+        valid_points = []
+        
+        if left_shoulder and left_wrist and left_shoulder.get('confidence', 0) > 0.3 and left_wrist.get('confidence', 0) > 0.3:
+            valid_points.append(('left', left_shoulder, left_wrist, left_elbow))
+        
+        if right_shoulder and right_wrist and right_shoulder.get('confidence', 0) > 0.3 and right_wrist.get('confidence', 0) > 0.3:
+            valid_points.append(('right', right_shoulder, right_wrist, right_elbow))
+        
+        if not valid_points:
+            return (0.0, 0.0)  # 沒有足夠的關鍵點
+        
+        # 計算每個手臂的角度分數
+        scores = []
+        confidences = []
+        
+        for side, shoulder, wrist, elbow in valid_points:
+            # 計算肩膀到手腕的向量
+            # 垂直方向：從肩膀向下到手腕（y軸增加）
+            # 水平方向：手腕相對肩膀的x偏移
+            
+            # 計算角度：理想情況是手臂垂直，即肩膀和手腕的x座標應該相近
+            # 我們計算肩膀到手腕的向量，然後看它與垂直線的夾角
+            dx = abs(wrist['x'] - shoulder['x'])  # 水平偏差
+            dy = abs(wrist['y'] - shoulder['y'])  # 垂直距離
+            
+            if dy < 0.01:  # 避免除以零
+                angle_score = 0.0
+            else:
+                # 計算與垂直線的夾角（以弧度為單位）
+                angle_rad = np.arctan(dx / dy)
+                angle_deg = np.degrees(angle_rad)
+                
+                # 理想角度是0度（完全垂直），允許偏差±15度
+                # 如果角度在0-15度之間，給滿分；超過15度開始扣分
+                if angle_deg <= 15:
+                    angle_score = 100.0
+                elif angle_deg <= 30:
+                    # 15-30度之間，線性扣分
+                    angle_score = 100.0 - (angle_deg - 15) * (50.0 / 15.0)  # 從100降到50
+                elif angle_deg <= 45:
+                    # 30-45度之間，繼續扣分
+                    angle_score = 50.0 - (angle_deg - 30) * (30.0 / 15.0)  # 從50降到20
+                else:
+                    # 超過45度，分數很低
+                    angle_score = max(0.0, 20.0 - (angle_deg - 45) * 0.5)
+            
+            scores.append(angle_score)
+            
+            # 信心度：使用肩膀和手腕的平均信心度
+            conf = (shoulder.get('confidence', 0) + wrist.get('confidence', 0)) / 2.0
+            confidences.append(conf)
+        
+        # 計算平均分數和信心度
+        avg_score = sum(scores) / len(scores) if scores else 0.0
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+        
+        return (min(100.0, max(0.0, avg_score)), min(1.0, max(0.0, avg_confidence)))
+    
+    def _calculate_general_score(self, keypoints: List[Dict]) -> Tuple[float, float]:
+        """
+        計算一般運動姿勢分數（當沒有特定評分邏輯時）
+        
+        Returns:
+            (pose_score, confidence) 元組
+        """
+        if not keypoints:
+            return (0.0, 0.0)
+        
+        # 基於關鍵點可見性和信心度的一般評分
+        visible_count = len([kp for kp in keypoints if kp.get('confidence', 0) > 0.3])
+        total_count = len(keypoints)
+        
+        visibility_score = (visible_count / total_count) * 100 if total_count > 0 else 0.0
+        
+        # 平均信心度
+        confidences = [kp.get('confidence', 0) for kp in keypoints]
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+        
+        # 姿勢分數基於可見性，信心度單獨返回
+        pose_score = visibility_score
+        
+        return (min(100.0, max(0.0, pose_score)), min(1.0, max(0.0, avg_confidence)))
     
     def _detect_pose_errors(self, keypoints: List[Dict]) -> List[str]:
         """檢測姿勢錯誤"""
