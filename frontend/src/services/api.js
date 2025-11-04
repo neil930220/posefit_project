@@ -61,7 +61,7 @@ api.interceptors.response.use(
                 }
 
                 const response = await api.post(
-                    'token/refresh/',
+                    '/api/token/refresh/',
                     { refresh: refreshToken }
                 );
 
@@ -144,7 +144,7 @@ export async function doLogout() {
     const refresh = cookieStorage.getItem('refresh_token');
     if (refresh) {
       // blacklist the refresh token
-      await api.post('token/blacklist/', { refresh });
+      await api.post('/api/token/blacklist/', { refresh });
     }
   } catch (err) {
     console.error('Error blacklisting token:', err);
