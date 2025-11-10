@@ -28,11 +28,112 @@ from .serializers import (
 from ml_models.pose_detector import get_pose_detector
 
 
+# 預設運動類型（確保資料存在）
+DEFAULT_EXERCISE_TYPES = [
+    {
+        'name': '深蹲',
+        'description': '深蹲是下半身基礎訓練動作，主要鍛鍊大腿前側、臀部和核心肌群。',
+        'difficulty_level': 2,
+        'target_muscles': ['大腿前側', '臀部', '核心肌群', '腿後肌'],
+        'instructions': [
+            '雙腳與肩同寬站立',
+            '手臂向前伸直或抱胸',
+            '臀部向後坐下',
+            '膝蓋彎曲至90度',
+            '膝蓋保持與腳尖同方向',
+            '站起時用腳跟發力'
+        ]
+    },
+    {
+        'name': '伏地挺身',
+        'description': '伏地挺身是鍛鍊胸部、三頭肌和核心肌群的基本動作。',
+        'difficulty_level': 2,
+        'target_muscles': ['胸部', '手臂', '肩膀', '核心肌群'],
+        'instructions': [
+            '雙手撐地，與肩同寬',
+            '身體保持一直線',
+            '下放胸部接近地面',
+            '手肘保持45度角',
+            '用手掌推回起始位置',
+            '避免腰部下垂'
+        ]
+    },
+    {
+        'name': '平板支撐',
+        'description': '平板支撐是鍛鍊核心肌群的靜態動作，主要訓練腹部、背部和肩膀穩定性。',
+        'difficulty_level': 1,
+        'target_muscles': ['腹部', '背部', '肩膀', '核心肌群'],
+        'instructions': [
+            '俯臥撐姿勢，但用前臂支撐',
+            '保持身體成一直線',
+            '核心收緊',
+            '保持正常呼吸',
+            '避免臀部過高或過低',
+            '保持姿勢穩定'
+        ]
+    },
+    {
+        'name': '弓箭步',
+        'description': '弓箭步是單側下肢訓練動作，主要鍛鍊大腿前側、後側和臀部肌群。',
+        'difficulty_level': 2,
+        'target_muscles': ['大腿前側', '大腿後側', '臀部', '核心肌群'],
+        'instructions': [
+            '雙腳與肩同寬站立',
+            '向前跨一大步',
+            '後腳保持穩定',
+            '前腳膝蓋彎曲至90度',
+            '後腳膝蓋接近地面',
+            '用前腳發力回到起始位置'
+        ]
+    },
+    {
+        'name': '引體向上',
+        'description': '引體向上是鍛鍊上半身拉力的動作，主要訓練背部、手臂和肩膀肌群。',
+        'difficulty_level': 3,
+        'target_muscles': ['背部', '手臂', '肩膀', '核心肌群'],
+        'instructions': [
+            '雙手正握單槓，與肩同寬',
+            '身體懸垂',
+            '肩胛骨收緊',
+            '用背部肌群拉起身體',
+            '下巴超過單槓',
+            '控制速度下降'
+        ]
+    },
+    {
+        'name': '舉重',
+        'description': '舉重是鍛鍊上半身肌群的動作，重點是保持手臂垂直角度，主要訓練肩膀、手臂和核心肌群。',
+        'difficulty_level': 2,
+        'target_muscles': ['肩膀', '手臂', '核心肌群', '背部'],
+        'instructions': [
+            '雙腳與肩同寬站立',
+            '雙手握住槓鈴或啞鈴',
+            '保持上半身手垂直角度（肩膀到手腕）',
+            '手臂應該垂直於地面',
+            '保持核心收緊',
+            '避免手臂過度前傾或後傾'
+        ]
+    }
+]
+
+
+def ensure_default_exercise_types():
+    """確保預設運動類型存在於資料庫中"""
+    for exercise_data in DEFAULT_EXERCISE_TYPES:
+        ExerciseType.objects.get_or_create(
+            name=exercise_data['name'],
+            defaults=exercise_data
+        )
+
+
 class ExerciseTypeListView(generics.ListCreateAPIView):
     """運動類型列表和創建"""
-    queryset = ExerciseType.objects.all()
     serializer_class = ExerciseTypeSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        ensure_default_exercise_types()
+        return ExerciseType.objects.all()
 
 
 class ExerciseSessionViewSet(viewsets.ModelViewSet):
