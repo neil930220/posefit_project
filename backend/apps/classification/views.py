@@ -1,7 +1,7 @@
 # app/classify/api.py
 
 from PIL import Image
-import cv2, numpy as np, re
+import re
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -59,16 +59,6 @@ class UploadAndAnalyze(APIView):
         
         if not predictions:
             return JsonResponse({'error': True, 'message': 'No food items detected'})
-
-        # 3) Area ratio (for overall food area)
-        arr   = np.array(img)[:,:,::-1]
-        gray  = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
-        blur  = cv2.GaussianBlur(gray, (5,5), 0)
-        _, th = cv2.threshold(blur, 100, 255, cv2.THRESH_BINARY)
-        ctrs, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        food_area  = max((cv2.contourArea(c) for c in ctrs), default=0)
-        image_area = arr.shape[0] * arr.shape[1]
-        ratio      = food_area / image_area
         
         # Get top prediction confidence
         top_confidence = predictions[0]['confidence']
@@ -83,8 +73,9 @@ class UploadAndAnalyze(APIView):
             # Gemini nutrition analysis for combined foods (request STRICT JSON)
             desc = (
                 f"這張圖片中檢測到以下食物：「{food_list_str}」，"
-                f"食物約佔整張圖片的 {ratio:.1%}。"
                 "請根據這些食物提供『合計』的營養素，並且只回覆一段有效的 JSON（不要加入任何解說或前後文，也不要使用 Markdown 區塊）。\n"
+                "請以單人份計算；若份量不明，假設整體重約 300 克。\n"
+                "務必使 calories_kcal = 4×macros.carbs_g + 4×macros.protein_g + 9×macros.fat_g，且所有數值皆針對同一份量（不是每100克）。\n"
                 "欄位與單位請完全依下列結構輸出（數值請為數字型態，沒有資料請填 0）：\n"
                 "{\n"
                 "  \"calories_kcal\": 0,\n"
@@ -234,6 +225,17 @@ class UploadAndAnalyze(APIView):
                     }
                 }
 
+            # Recalculate calories with Atwater formula when advanced JSON is available
+            if isinstance(advanced_out, dict):
+                carbs = advanced_out['macros'].get('carbs_g', 0.0) if isinstance(advanced_out.get('macros'), dict) else 0.0
+                protein = advanced_out['macros'].get('protein_g', 0.0) if isinstance(advanced_out.get('macros'), dict) else 0.0
+                fat = advanced_out['macros'].get('fat_g', 0.0) if isinstance(advanced_out.get('macros'), dict) else 0.0
+                try:
+                    atwater_cal = int(round(4 * float(carbs) + 4 * float(protein) + 9 * float(fat)))
+                except Exception:
+                    atwater_cal = 0
+                advanced_out['calories_kcal'] = atwater_cal
+
             # Build JSON response (preserve backward-compatible fields)
             basic_carbs = safe_extract_float('碳水化合物') if advanced_out is None else advanced_out['macros']['carbs_g']
             basic_protein = safe_extract_float('蛋白質') if advanced_out is None else advanced_out['macros']['protein_g']
@@ -241,12 +243,28 @@ class UploadAndAnalyze(APIView):
             vitamins_text = nutrition_data.get('維生素', '')
             minerals_text = nutrition_data.get('礦物質', '')
 
+            # Fallback Atwater calories if only basic fields are available
+            basic_atwater = 0
+            try:
+                if (basic_carbs or basic_protein or basic_fat):
+                    basic_atwater = int(round(4 * float(basic_carbs) + 4 * float(basic_protein) + 9 * float(basic_fat)))
+            except Exception:
+                basic_atwater = 0
+
+            # Choose final calories with sanity cap
+            if advanced_out is not None:
+                calories_candidate = int(round(advanced_out.get('calories_kcal') or 0))
+            else:
+                calories_candidate = basic_atwater if basic_atwater > 0 else est_cal
+
+            MAX_CALORIES_PER_MEAL = 1200
+            calories_final = max(0, min(calories_candidate, MAX_CALORIES_PER_MEAL))
+
             result_data = {
                 'predictions': predictions,
-                'ratio': f"{ratio:.2%}",
                 'gemini': gemini_resp or '營養模型暫無回覆，已提供基本預測結果',
                 'nutrition': {
-                    'calories': est_cal if advanced_out is None else int(round(advanced_out['calories_kcal'] or 0)),
+                    'calories': calories_final,
                     'carbs': basic_carbs,
                     'protein': basic_protein,
                     'fat': basic_fat,
@@ -261,7 +279,7 @@ class UploadAndAnalyze(APIView):
                     'vitamins': vitamins_text,
                     'minerals': minerals_text
                 },
-                'total_calories': est_cal if advanced_out is None else int(round(advanced_out['calories_kcal'] or 0)),
+                'total_calories': calories_final,
             }
             return Response(result_data, status=status.HTTP_200_OK)
         
