@@ -43,24 +43,25 @@ class OpenPoseDetector:
         # MediaPipe Pose 連接（使用 MediaPipe 官方定義）
         self.POSE_CONNECTIONS = None  # MediaPipe 會自動處理
         
-        # 關鍵點名稱 (MediaPipe - 33個關鍵點)
+        # 關鍵點名稱 (MediaPipe - 33個關鍵點，依官方順序)
         self.KEYPOINT_NAMES = [
-            "Nose", "LEye", "REye", "LEar", "REar",
-            "LShoulder", "RShoulder", "LElbow", "RElbow",
-            "LWrist", "RWrist", "LPinky", "RPinky",
-            "LIndex", "RIndex", "LThumb", "RThumb",
-            "LHip", "RHip", "LKnee", "RKnee",
-            "LAnkle", "RAnkle", "LHeel", "RHeel",
-            "LFootIndex", "RFootIndex"
+            "Nose", "LeftEyeInner", "LeftEye", "LeftEyeOuter", "RightEyeInner", "RightEye", "RightEyeOuter",
+            "LeftEar", "RightEar", "MouthLeft", "MouthRight",
+            "LeftShoulder", "RightShoulder", "LeftElbow", "RightElbow",
+            "LeftWrist", "RightWrist", "LeftPinky", "RightPinky",
+            "LeftIndex", "RightIndex", "LeftThumb", "RightThumb",
+            "LeftHip", "RightHip", "LeftKnee", "RightKnee",
+            "LeftAnkle", "RightAnkle", "LeftHeel", "RightHeel",
+            "LeftFootIndex", "RightFootIndex"
         ]
         
         self.ARM_KEYPOINT_NAMES = {
-            'left': {'shoulder': 'LShoulder', 'elbow': 'LElbow', 'wrist': 'LWrist'},
-            'right': {'shoulder': 'RShoulder', 'elbow': 'RElbow', 'wrist': 'RWrist'},
+            'left': {'shoulder': 'LeftShoulder', 'elbow': 'LeftElbow', 'wrist': 'LeftWrist'},
+            'right': {'shoulder': 'RightShoulder', 'elbow': 'RightElbow', 'wrist': 'RightWrist'},
         }
         self.ANGLE_TARGET = 90.0
         self.ANGLE_TOLERANCE = 15.0
-        self.MIN_KEYPOINT_CONFIDENCE = 0.5
+        self.MIN_KEYPOINT_CONFIDENCE = 0.4
         self.MIN_SEGMENT_LENGTH = 0.05
 
         self._load_model()
@@ -225,19 +226,19 @@ class OpenPoseDetector:
         keypoint_positions = [
             (x + w // 2, y + h // 8, 'Nose'),      # 0: Nose
             (x + w // 2, y + h // 3, 'Neck'),      # 1: Neck
-            (x + w // 4, y + h // 3, 'RShoulder'), # 2: RShoulder
-            (x + w // 6, y + h // 2, 'RElbow'),    # 3: RElbow
-            (x + w // 8, y + h // 1.5, 'RWrist'), # 4: RWrist
-            (x + w * 3 // 4, y + h // 3, 'LShoulder'), # 5: LShoulder
-            (x + w * 5 // 6, y + h // 2, 'LElbow'),    # 6: LElbow
-            (x + w * 7 // 8, y + h // 1.5, 'LWrist'), # 7: LWrist
+            (x + w // 4, y + h // 3, 'RightShoulder'), # 2: RShoulder
+            (x + w // 6, y + h // 2, 'RightElbow'),    # 3: RElbow
+            (x + w // 8, y + h // 1.5, 'RightWrist'), # 4: RWrist
+            (x + w * 3 // 4, y + h // 3, 'LeftShoulder'), # 5: LShoulder
+            (x + w * 5 // 6, y + h // 2, 'LeftElbow'),    # 6: LElbow
+            (x + w * 7 // 8, y + h // 1.5, 'LeftWrist'), # 7: LWrist
             (x + w // 2, y + h * 2 // 3, 'MidHip'),   # 8: MidHip
-            (x + w // 3, y + h * 2 // 3, 'RHip'),     # 9: RHip
-            (x + w // 4, y + h, 'RKnee'),          # 10: RKnee
-            (x + w // 6, y + h, 'RAnkle'),         # 11: RAnkle
-            (x + w * 2 // 3, y + h * 2 // 3, 'LHip'), # 12: LHip
-            (x + w * 3 // 4, y + h, 'LKnee'),      # 13: LKnee
-            (x + w * 5 // 6, y + h, 'LAnkle'),     # 14: LAnkle
+            (x + w // 3, y + h * 2 // 3, 'RightHip'),     # 9: RHip
+            (x + w // 4, y + h, 'RightKnee'),          # 10: RKnee
+            (x + w // 6, y + h, 'RightAnkle'),         # 11: RAnkle
+            (x + w * 2 // 3, y + h * 2 // 3, 'LeftHip'), # 12: LHip
+            (x + w * 3 // 4, y + h, 'LeftKnee'),      # 13: LKnee
+            (x + w * 5 // 6, y + h, 'LeftAnkle'),     # 14: LAnkle
         ]
         
         for i, (kx, ky, name) in enumerate(keypoint_positions):
@@ -299,16 +300,26 @@ class OpenPoseDetector:
             elbow = self._get_keypoint(keypoints, names['elbow'])
             wrist = self._get_keypoint(keypoints, names['wrist'])
 
+            logger.debug(
+                'Weightlifting evaluation - %s臂: shoulder=%s, elbow=%s, wrist=%s',
+                label, shoulder, elbow, wrist
+            )
+
             if not all([shoulder, elbow, wrist]):
                 result['warnings'].append(f"{label}臂關鍵點未完整偵測，請保持手臂在鏡頭中。")
                 continue
 
             confidences_side = [shoulder.get('confidence', 0), elbow.get('confidence', 0), wrist.get('confidence', 0)]
+            logger.debug(
+                'Weightlifting evaluation - %s臂 confidences=%s (threshold=%.2f)',
+                label, confidences_side, self.MIN_KEYPOINT_CONFIDENCE
+            )
             if min(confidences_side) < self.MIN_KEYPOINT_CONFIDENCE:
-                result['warnings'].append(f"{label}臂關鍵點不夠清楚，請調整光線或位置。")
+                result['warnings'].append(f"{label}臂關節信心度不足 (最低 {self.MIN_KEYPOINT_CONFIDENCE:.2f})，請調整位置或光線。")
                 continue
 
             angle = self._compute_elbow_angle(shoulder, elbow, wrist)
+            logger.debug('Weightlifting evaluation - %s臂角度=%s', label, angle)
             if angle is None:
                 result['warnings'].append(f"{label}臂角度無法計算，請伸直手臂並保持穩定。")
                 continue
