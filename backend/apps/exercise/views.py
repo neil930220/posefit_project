@@ -29,101 +29,28 @@ from ml_models.pose_detector import get_pose_detector
 
 
 # 預設運動類型（確保資料存在）
-DEFAULT_EXERCISE_TYPES = [
-    {
-        'name': '深蹲',
-        'description': '深蹲是下半身基礎訓練動作，主要鍛鍊大腿前側、臀部和核心肌群。',
-        'difficulty_level': 2,
-        'target_muscles': ['大腿前側', '臀部', '核心肌群', '腿後肌'],
-        'instructions': [
-            '雙腳與肩同寬站立',
-            '手臂向前伸直或抱胸',
-            '臀部向後坐下',
-            '膝蓋彎曲至90度',
-            '膝蓋保持與腳尖同方向',
-            '站起時用腳跟發力'
-        ]
-    },
-    {
-        'name': '伏地挺身',
-        'description': '伏地挺身是鍛鍊胸部、三頭肌和核心肌群的基本動作。',
-        'difficulty_level': 2,
-        'target_muscles': ['胸部', '手臂', '肩膀', '核心肌群'],
-        'instructions': [
-            '雙手撐地，與肩同寬',
-            '身體保持一直線',
-            '下放胸部接近地面',
-            '手肘保持45度角',
-            '用手掌推回起始位置',
-            '避免腰部下垂'
-        ]
-    },
-    {
-        'name': '平板支撐',
-        'description': '平板支撐是鍛鍊核心肌群的靜態動作，主要訓練腹部、背部和肩膀穩定性。',
-        'difficulty_level': 1,
-        'target_muscles': ['腹部', '背部', '肩膀', '核心肌群'],
-        'instructions': [
-            '俯臥撐姿勢，但用前臂支撐',
-            '保持身體成一直線',
-            '核心收緊',
-            '保持正常呼吸',
-            '避免臀部過高或過低',
-            '保持姿勢穩定'
-        ]
-    },
-    {
-        'name': '弓箭步',
-        'description': '弓箭步是單側下肢訓練動作，主要鍛鍊大腿前側、後側和臀部肌群。',
-        'difficulty_level': 2,
-        'target_muscles': ['大腿前側', '大腿後側', '臀部', '核心肌群'],
-        'instructions': [
-            '雙腳與肩同寬站立',
-            '向前跨一大步',
-            '後腳保持穩定',
-            '前腳膝蓋彎曲至90度',
-            '後腳膝蓋接近地面',
-            '用前腳發力回到起始位置'
-        ]
-    },
-    {
-        'name': '引體向上',
-        'description': '引體向上是鍛鍊上半身拉力的動作，主要訓練背部、手臂和肩膀肌群。',
-        'difficulty_level': 3,
-        'target_muscles': ['背部', '手臂', '肩膀', '核心肌群'],
-        'instructions': [
-            '雙手正握單槓，與肩同寬',
-            '身體懸垂',
-            '肩胛骨收緊',
-            '用背部肌群拉起身體',
-            '下巴超過單槓',
-            '控制速度下降'
-        ]
-    },
-    {
-        'name': '舉重',
-        'description': '舉重是鍛鍊上半身肌群的動作，重點是保持手臂垂直角度，主要訓練肩膀、手臂和核心肌群。',
-        'difficulty_level': 2,
-        'target_muscles': ['肩膀', '手臂', '核心肌群', '背部'],
-        'instructions': [
-            '雙腳與肩同寬站立',
-            '雙手握住槓鈴或啞鈴',
-            '保持上半身手垂直角度（肩膀到手腕）',
-            '手臂應該垂直於地面',
-            '保持核心收緊',
-            '避免手臂過度前傾或後傾'
-        ]
-    }
-]
+DEFAULT_WEIGHTLIFTING_EXERCISE = {
+    'name': '舉重',
+    'description': '舉重是鍛鍊上半身肌群的動作，重點是保持手臂垂直角度，主要訓練肩膀、手臂和核心肌群。',
+    'difficulty_level': 2,
+    'target_muscles': ['肩膀', '手臂', '核心肌群'],
+    'instructions': [
+        '雙腳與肩同寬站立',
+        '雙手握住器材並舉至頭頂上方',
+        '保持上臂與前臂呈垂直角度',
+        '核心收緊、避免身體晃動'
+    ]
+}
 
 
-def ensure_default_exercise_types():
-    """確保預設運動類型存在於資料庫中"""
-    for exercise_data in DEFAULT_EXERCISE_TYPES:
-        ExerciseType.objects.get_or_create(
-            name=exercise_data['name'],
-            defaults=exercise_data
-        )
+
+def ensure_weightlifting_exercise_type():
+    """確保僅保留舉重運動類型"""
+    ExerciseType.objects.exclude(name=DEFAULT_WEIGHTLIFTING_EXERCISE['name']).delete()
+    ExerciseType.objects.get_or_create(
+        name=DEFAULT_WEIGHTLIFTING_EXERCISE['name'],
+        defaults=DEFAULT_WEIGHTLIFTING_EXERCISE
+    )
 
 
 class ExerciseTypeListView(generics.ListCreateAPIView):
@@ -132,7 +59,7 @@ class ExerciseTypeListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        ensure_default_exercise_types()
+        ensure_weightlifting_exercise_type()
         return ExerciseType.objects.all()
 
 
@@ -158,7 +85,7 @@ def analyze_pose(request):
     try:
         # 獲取輸入資料
         image_data = request.data.get('image')
-        exercise_type = request.data.get('exercise_type', 'general')
+        exercise_type = DEFAULT_WEIGHTLIFTING_EXERCISE['name']
         session_id = request.data.get('session_id')
         frame_number = request.data.get('frame_number', 0)
         
@@ -211,17 +138,17 @@ def analyze_pose(request):
                     ai_feedback=feedback
                 )
                 
-                # 更新訓練記錄
-                session.total_reps += 1
-                if session.average_score is None:
-                    session.average_score = pose_result['pose_score']
-                else:
-                    # 計算移動平均
-                    session.average_score = (
-                        session.average_score * (session.total_reps - 1) + 
-                        pose_result['pose_score']
-                    ) / session.total_reps
-                session.save()
+                # 更新訓練記錄（僅在成功時累計）
+                if pose_result.get('is_success'):
+                    session.total_reps += 1
+                    if session.average_score is None:
+                        session.average_score = pose_result['pose_score']
+                    else:
+                        session.average_score = (
+                            session.average_score * (session.total_reps - 1) + 
+                            pose_result['pose_score']
+                        ) / session.total_reps
+                    session.save(update_fields=['total_reps', 'average_score'])
                 
             except ExerciseSession.DoesNotExist:
                 pass
@@ -232,6 +159,8 @@ def analyze_pose(request):
             'keypoints': pose_result['keypoints'],
             'pose_score': pose_result['pose_score'],
             'confidence': pose_result['confidence'],
+            'is_success': pose_result.get('is_success', False),
+            'angles': pose_result.get('angles', {}),
             'detected_errors': pose_result['detected_errors'],
             'ai_feedback': feedback,
             'timestamp': pose_result['timestamp'],
@@ -252,33 +181,19 @@ def analyze_pose(request):
 def start_exercise_session(request):
     """開始新的運動訓練"""
     try:
-        exercise_type_id = request.data.get('exercise_type_id')
         session_name = request.data.get('session_name', '')
-        
-        if not exercise_type_id:
-            return Response(
-                {'error': 'Exercise type ID is required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            exercise_type = ExerciseType.objects.get(id=exercise_type_id)
-        except ExerciseType.DoesNotExist:
-            return Response(
-                {'error': 'Exercise type not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        # 創建新的訓練記錄
+        ensure_weightlifting_exercise_type()
+        exercise_type = ExerciseType.objects.get(name=DEFAULT_WEIGHTLIFTING_EXERCISE['name'])
+
         session = ExerciseSession.objects.create(
             user=request.user,
             exercise_type=exercise_type,
             session_name=session_name or f"{exercise_type.name} 訓練"
         )
-        
+
         serializer = ExerciseSessionSerializer(session)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+
     except Exception as e:
         return Response(
             {'error': f'Failed to start session: {str(e)}'}, 
@@ -370,7 +285,7 @@ def get_pose_feedback(request):
     """獲取姿勢回饋建議"""
     try:
         keypoints = request.data.get('keypoints', [])
-        exercise_type = request.data.get('exercise_type', 'general')
+        exercise_type = DEFAULT_WEIGHTLIFTING_EXERCISE['name']
         
         pose_detector = get_pose_detector()
         feedback = pose_detector.get_pose_feedback(keypoints, exercise_type)

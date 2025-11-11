@@ -167,26 +167,27 @@
             </div>
           </div>
 
-          <!-- Exercise Selection -->
+          <!-- Success Counter -->
           <div class="bg-gray-800 rounded-lg p-4">
-            <h3 class="text-lg font-semibold mb-4">選擇運動類型</h3>
-            
-            <select 
-              v-model="selectedExerciseType"
-              class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
-            >
-              <option value="">請選擇運動類型</option>
-              <option v-for="exercise in exerciseTypes" :key="exercise.id" :value="exercise.id">
-                {{ exercise.name }}
-              </option>
-            </select>
-            
-            <div v-if="selectedExerciseType" class="mt-4">
-              <div class="text-sm text-gray-400 mb-2">運動說明</div>
-              <p class="text-sm text-gray-300">
-                {{ getExerciseDescription(selectedExerciseType) }}
-              </p>
+            <h3 class="text-lg font-semibold mb-4">舉重成功次數</h3>
+            <div class="flex items-center justify-between text-xl">
+              <span>成功次數</span>
+              <span class="font-bold text-green-400">{{ successCount }}</span>
             </div>
+            <div v-if="currentAnalysis?.angles" class="mt-4 space-y-2 text-sm text-gray-300">
+              <div v-if="currentAnalysis.angles.left !== null">
+                左臂角度：約 {{ formatAngle(currentAnalysis.angles.left) }}°
+              </div>
+              <div v-if="currentAnalysis.angles.right !== null">
+                右臂角度：約 {{ formatAngle(currentAnalysis.angles.right) }}°
+              </div>
+            </div>
+            <button
+              @click="resetSuccessCount"
+              class="mt-4 w-full bg-gray-700 hover:bg-gray-600 rounded py-2 text-sm"
+            >
+              重設計數
+            </button>
           </div>
 
           <!-- Training Stats -->
@@ -218,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
 
@@ -234,8 +235,7 @@ const frameCount = ref(0)
 const isTraining = ref(false)
 const currentSession = ref(null)
 const currentAnalysis = ref(null)
-const exerciseTypes = ref([])
-const selectedExerciseType = ref('')
+const successCount = ref(0)
 const trainingStats = ref({
   totalReps: 0,
   averageScore: 0,
@@ -273,7 +273,6 @@ onMounted(async () => {
   captureCanvas = document.createElement('canvas')
   captureCtx = captureCanvas.getContext('2d')
   
-  await loadExerciseTypes()
   await initCamera()
 })
 
@@ -282,43 +281,7 @@ onUnmounted(() => {
 })
 
 // Methods
-const loadExerciseTypes = async () => {
-  try {
-    const response = await api.get('api/exercise/exercise-types/')
-    console.log('📋 API Response:', response)
-    console.log('📋 Response data:', response.data)
-    console.log('📋 Response data type:', typeof response.data)
-    console.log('📋 Is array?', Array.isArray(response.data))
-    
-    // Handle both array and paginated response
-    let types = response.data
-    if (response.data && response.data.results) {
-      // Paginated response
-      types = response.data.results
-      console.log('📄 Detected paginated response, using results:', types)
-    } else if (Array.isArray(response.data)) {
-      // Direct array response
-      types = response.data
-      console.log('📋 Detected array response:', types)
-    } else {
-      console.warn('⚠️ Unexpected response format:', response.data)
-      types = []
-    }
-    
-    exerciseTypes.value = types
-    console.log('✅ Exercise types loaded successfully, count:', exerciseTypes.value.length)
-    if (exerciseTypes.value.length > 0) {
-      console.log('📝 Available exercises:', exerciseTypes.value.map(e => e.name || e).join(', '))
-      console.log('📝 Exercise IDs:', exerciseTypes.value.map(e => e.id || 'no-id').join(', '))
-    } else {
-      console.warn('⚠️ No exercise types found!')
-    }
-  } catch (error) {
-    console.error('❌ Failed to load exercise types:', error)
-    console.error('❌ Error details:', error.response?.data || error.message)
-    exerciseTypes.value = []
-  }
-}
+
 
 const initCamera = async () => {
   try {
@@ -408,6 +371,7 @@ const startRealTimeDetection = () => {
 
 const stopRealTimeDetection = () => {
   isRealTimeDetection.value = false
+  lastSuccessFrame = false
   
   if (analysisInterval) {
     clearInterval(analysisInterval)
@@ -416,6 +380,7 @@ const stopRealTimeDetection = () => {
 }
 
 let isProcessing = false  // 防止重複請求
+let lastSuccessFrame = false
 
 const captureAndAnalyzeFrame = async () => {
   // 檢查是否應該繼續
@@ -457,7 +422,6 @@ const captureAndAnalyzeFrame = async () => {
     // OPTIMIZATION: Use fast base64ToBlob instead of slow fetch()
     const blob = base64ToBlob(imageData, 'image/jpeg')
     formData.append('image', blob, 'frame.jpg')
-    formData.append('exercise_type', getExerciseTypeName(selectedExerciseType.value))
     if (currentSession.value?.id) {
       formData.append('session_id', currentSession.value.id)
     }
@@ -474,6 +438,10 @@ const captureAndAnalyzeFrame = async () => {
     console.log('✅ Response received:', response.data)
     
     currentAnalysis.value = response.data
+    if (response.data.is_success && !lastSuccessFrame) {
+      successCount.value += 1
+    }
+    lastSuccessFrame = response.data.is_success
     frameCount.value++
     
     // Draw pose on canvas with keypoints only (REALTIME)
@@ -483,13 +451,18 @@ const captureAndAnalyzeFrame = async () => {
     
     // Update training stats
     if (currentSession.value) {
-      trainingStats.value.totalReps = currentSession.value.total_reps || 0
-      trainingStats.value.averageScore = currentSession.value.average_score || 0
+      trainingStats.value.totalReps = successCount.value
+      const previousAverage = trainingStats.value.averageScore
+      const count = successCount.value
+      trainingStats.value.averageScore = count > 0
+        ? ((previousAverage * (count - 1)) + response.data.pose_score) / count
+        : response.data.pose_score
     }
     
   } catch (error) {
     console.error('❌ Pose analysis failed:', error)
     console.error('Error details:', error.response?.data || error.message)
+    lastSuccessFrame = false
     
     // 確保幀數增加，即使失敗也要繼續
     frameCount.value++
@@ -497,6 +470,18 @@ const captureAndAnalyzeFrame = async () => {
   } finally {
     isProcessing = false
   }
+}
+
+const formatAngle = (angle) => {
+  if (angle === null || angle === undefined) return '--'
+  return Number(angle).toFixed(1)
+}
+
+const resetSuccessCount = () => {
+  successCount.value = 0
+  trainingStats.value.totalReps = 0
+  trainingStats.value.averageScore = 0
+  lastSuccessFrame = false
 }
 
 const captureFrame = async () => {
@@ -577,25 +562,20 @@ const drawPoseOnCanvas = (keypoints) => {
 }
 
 const startTraining = async () => {
-  if (!selectedExerciseType.value) {
-    alert('請先選擇運動類型')
-    return
-  }
-  
   try {
     const response = await api.post('api/exercise/start-session/', {
-      exercise_type_id: selectedExerciseType.value,
-      session_name: `${getExerciseTypeName(selectedExerciseType.value)} 訓練`
+      session_name: '舉重訓練'
     })
-    
+
     currentSession.value = response.data
     isTraining.value = true
+    successCount.value = 0
+    lastSuccessFrame = false
     trainingStats.value = {
       totalReps: 0,
       averageScore: 0,
       duration: 0
     }
-    
   } catch (error) {
     console.error('Failed to start training:', error)
     alert('開始訓練失敗')
@@ -613,16 +593,6 @@ const stopTraining = async () => {
   } catch (error) {
     console.error('Failed to stop training:', error)
   }
-}
-
-const getExerciseTypeName = (id) => {
-  const exercise = exerciseTypes.value.find(e => e.id === id)
-  return exercise ? exercise.name : '一般運動'
-}
-
-const getExerciseDescription = (id) => {
-  const exercise = exerciseTypes.value.find(e => e.id === id)
-  return exercise ? exercise.description : ''
 }
 
 const getScoreColor = (score) => {
