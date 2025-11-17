@@ -127,12 +127,6 @@
                 <div class="text-sm text-gray-400">姿勢分數</div>
               </div>
               
-              <!-- Confidence -->
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-400">信心度</span>
-                <span class="text-sm font-medium">{{ Math.round(currentAnalysis.confidence * 100) }}%</span>
-              </div>
-              
               <!-- Progress Bar -->
               <div class="w-full bg-gray-700 rounded-full h-2">
                 <div 

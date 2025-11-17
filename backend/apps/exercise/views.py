@@ -185,6 +185,10 @@ def start_exercise_session(request):
         ensure_weightlifting_exercise_type()
         exercise_type = ExerciseType.objects.get(name=DEFAULT_WEIGHTLIFTING_EXERCISE['name'])
 
+        # 重置動作狀態機
+        pose_detector = get_pose_detector()
+        pose_detector.reset_action_state()
+
         session = ExerciseSession.objects.create(
             user=request.user,
             exercise_type=exercise_type,

@@ -63,6 +63,16 @@ class OpenPoseDetector:
         self.ANGLE_TOLERANCE = 15.0
         self.MIN_KEYPOINT_CONFIDENCE = 0.4
         self.MIN_SEGMENT_LENGTH = 0.05
+        
+        # 動作辨識狀態機（追蹤完整動作循環：垂直 -> 伸直 -> 垂直）
+        # 狀態：'idle' -> 'at_vertical' -> 'at_extended' -> 'completed'
+        self.action_state = {
+            'left': 'idle',   # 左臂狀態
+            'right': 'idle'   # 右臂狀態
+        }
+        self.EXTENDED_ANGLE_THRESHOLD = 150.0  # 伸直角度閾值（>150度視為伸直）
+        self.VERTICAL_ANGLE_MIN = 75.0  # 垂直角度下限（90-15）
+        self.VERTICAL_ANGLE_MAX = 105.0  # 垂直角度上限（90+15）
 
         self._load_model()
     
@@ -86,6 +96,14 @@ class OpenPoseDetector:
         except Exception as e:
             logger.error(f"Failed to load MediaPipe model: {e}")
             self.pose = None
+    
+    def reset_action_state(self):
+        """重置動作狀態機（用於開始新的訓練）"""
+        self.action_state = {
+            'left': 'idle',
+            'right': 'idle'
+        }
+        logger.info("動作狀態機已重置")
     
     def detect_pose(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
         """
@@ -277,7 +295,7 @@ class OpenPoseDetector:
         return float(np.degrees(np.arccos(cos_theta)))
 
     def _evaluate_weightlifting_pose(self, keypoints: List[Dict]) -> Dict:
-        """評估舉重姿勢，回傳分數、角度與提示訊息"""
+        """評估舉重姿勢，追蹤完整動作循環（垂直 -> 伸直 -> 垂直）"""
         result = {
             'pose_score': 0.0,
             'confidence': 0.0,
@@ -292,7 +310,7 @@ class OpenPoseDetector:
 
         side_scores: List[float] = []
         confidences: List[float] = []
-        success_flags: List[bool] = []
+        completed_arms: List[str] = []  # 完成完整動作循環的手臂
 
         for side, names in self.ARM_KEYPOINT_NAMES.items():
             label = '左' if side == 'left' else '右'
@@ -307,6 +325,8 @@ class OpenPoseDetector:
 
             if not all([shoulder, elbow, wrist]):
                 result['warnings'].append(f"{label}臂關鍵點未完整偵測，請保持手臂在鏡頭中。")
+                # 重置該手臂的狀態
+                self.action_state[side] = 'idle'
                 continue
 
             confidences_side = [shoulder.get('confidence', 0), elbow.get('confidence', 0), wrist.get('confidence', 0)]
@@ -316,34 +336,77 @@ class OpenPoseDetector:
             )
             if min(confidences_side) < self.MIN_KEYPOINT_CONFIDENCE:
                 result['warnings'].append(f"{label}臂關節信心度不足 (最低 {self.MIN_KEYPOINT_CONFIDENCE:.2f})，請調整位置或光線。")
+                # 重置該手臂的狀態
+                self.action_state[side] = 'idle'
                 continue
 
             angle = self._compute_elbow_angle(shoulder, elbow, wrist)
-            logger.debug('Weightlifting evaluation - %s臂角度=%s', label, angle)
+            logger.debug('Weightlifting evaluation - %s臂角度=%s, 當前狀態=%s', label, angle, self.action_state[side])
             if angle is None:
                 result['warnings'].append(f"{label}臂角度無法計算，請伸直手臂並保持穩定。")
+                # 重置該手臂的狀態
+                self.action_state[side] = 'idle'
                 continue
 
             result['angles'][side] = angle
+            current_state = self.action_state[side]
+            
+            # 狀態機邏輯：追蹤完整動作循環
+            # idle -> at_vertical -> at_extended -> completed (回到 vertical)
+            if current_state == 'idle':
+                # 等待達到垂直姿勢
+                if self.VERTICAL_ANGLE_MIN <= angle <= self.VERTICAL_ANGLE_MAX:
+                    self.action_state[side] = 'at_vertical'
+                    logger.debug('%s臂：達到垂直姿勢，狀態轉換 idle -> at_vertical', label)
+            elif current_state == 'at_vertical':
+                # 從垂直到伸直
+                if angle >= self.EXTENDED_ANGLE_THRESHOLD:
+                    self.action_state[side] = 'at_extended'
+                    logger.debug('%s臂：達到伸直姿勢，狀態轉換 at_vertical -> at_extended', label)
+                elif angle < self.VERTICAL_ANGLE_MIN:
+                    # 如果角度變小，可能回到 idle
+                    self.action_state[side] = 'idle'
+            elif current_state == 'at_extended':
+                # 從伸直回到垂直（完成一次動作）
+                if self.VERTICAL_ANGLE_MIN <= angle <= self.VERTICAL_ANGLE_MAX:
+                    self.action_state[side] = 'completed'
+                    completed_arms.append(side)
+                    logger.debug('%s臂：完成一次動作循環！狀態轉換 at_extended -> completed', label)
+                elif angle < self.VERTICAL_ANGLE_MIN:
+                    # 如果角度變小太多，可能回到 idle
+                    self.action_state[side] = 'idle'
+            elif current_state == 'completed':
+                # 完成後，準備下一次循環
+                if angle >= self.EXTENDED_ANGLE_THRESHOLD:
+                    # 如果又伸直了，重置狀態（可能在做下一次）
+                    self.action_state[side] = 'at_extended'
+                elif self.VERTICAL_ANGLE_MIN <= angle <= self.VERTICAL_ANGLE_MAX:
+                    # 保持在垂直，準備下一次
+                    self.action_state[side] = 'at_vertical'
+                else:
+                    # 其他情況，重置
+                    self.action_state[side] = 'idle'
+
+            # 計算姿勢分數（基於角度與目標的偏差）
             deviation = abs(angle - self.ANGLE_TARGET)
-            is_side_success = deviation <= self.ANGLE_TOLERANCE
-            success_flags.append(is_side_success)
-
-            if not is_side_success:
-                result['warnings'].append(f"{label}臂角度約 {angle:.1f}°，請調整至接近垂直 (90°)。")
-
             side_score = max(0.0, 100.0 - deviation * 2.0)
             side_scores.append(side_score)
             confidences.append(sum(confidences_side) / len(confidences_side))
+
+        # 如果至少有一隻手臂完成完整循環，標記為成功
+        if completed_arms:
+            result['is_success'] = True
+            # 重置已完成的手臂狀態，準備下一次循環
+            for arm in completed_arms:
+                self.action_state[arm] = 'at_vertical'
+            logger.info('動作完成！完成的手臂：%s', completed_arms)
 
         if side_scores:
             result['pose_score'] = sum(side_scores) / len(side_scores)
         if confidences:
             result['confidence'] = min(1.0, sum(confidences) / len(confidences))
 
-        if len(success_flags) == len(self.ARM_KEYPOINT_NAMES):
-            result['is_success'] = all(success_flags)
-        elif not success_flags:
+        if not side_scores:
             result['warnings'].append('無法判定手臂角度，請將雙臂完全呈現在鏡頭中。')
 
         return result
