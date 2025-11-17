@@ -21,7 +21,7 @@
         <h2 class="text-2xl font-semibold mb-6">登入</h2>
         <form @submit.prevent="onSubmit" novalidate>
           <div class="mb-4">
-            <label class="block text-gray-700 mb-1" for="email">電子郵件 *</label>
+            <label class="block text-gray-700 mb-1" for="email">帳號 *</label>
             <input
               id="email"
               v-model="form.username"
