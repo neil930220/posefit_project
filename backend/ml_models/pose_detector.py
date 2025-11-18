@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import json
 import os
+import time
 from typing import List, Dict, Tuple, Optional
 from pathlib import Path
 import logging
@@ -73,6 +74,10 @@ class OpenPoseDetector:
         self.EXTENDED_ANGLE_THRESHOLD = 150.0  # 伸直角度閾值（>150度視為伸直）
         self.VERTICAL_ANGLE_MIN = 75.0  # 垂直角度下限（90-15）
         self.VERTICAL_ANGLE_MAX = 105.0  # 垂直角度上限（90+15）
+        
+        # 冷卻時間機制（避免重複計數）
+        self.last_success_time = 0.0  # 最後一次成功的時間戳記
+        self.COOLDOWN_SECONDS = 1.5  # 冷卻時間（秒），在此時間內不會再次計數
 
         self._load_model()
     
@@ -103,6 +108,7 @@ class OpenPoseDetector:
             'left': 'idle',
             'right': 'idle'
         }
+        self.last_success_time = 0.0
         logger.info("動作狀態機已重置")
     
     def detect_pose(self, frame: np.ndarray, exercise_type: str = "general") -> Dict:
@@ -393,13 +399,25 @@ class OpenPoseDetector:
             side_scores.append(side_score)
             confidences.append(sum(confidences_side) / len(confidences_side))
 
-        # 如果至少有一隻手臂完成完整循環，標記為成功
+        # 如果至少有一隻手臂完成完整循環，檢查冷卻時間後標記為成功
         if completed_arms:
-            result['is_success'] = True
-            # 重置已完成的手臂狀態，準備下一次循環
-            for arm in completed_arms:
-                self.action_state[arm] = 'at_vertical'
-            logger.info('動作完成！完成的手臂：%s', completed_arms)
+            current_time = time.time()
+            time_since_last_success = current_time - self.last_success_time
+            
+            # 只有在冷卻時間過後才計數
+            if time_since_last_success >= self.COOLDOWN_SECONDS:
+                result['is_success'] = True
+                self.last_success_time = current_time
+                # 重置已完成的手臂狀態，準備下一次循環
+                for arm in completed_arms:
+                    self.action_state[arm] = 'at_vertical'
+                logger.info('動作完成！完成的手臂：%s (距離上次成功: %.2f秒)', completed_arms, time_since_last_success)
+            else:
+                # 在冷卻時間內，不計數但重置狀態
+                for arm in completed_arms:
+                    self.action_state[arm] = 'at_vertical'
+                logger.debug('動作完成但仍在冷卻時間內 (%.2f秒 < %.2f秒)，不計數', 
+                           time_since_last_success, self.COOLDOWN_SECONDS)
 
         if side_scores:
             result['pose_score'] = sum(side_scores) / len(side_scores)
