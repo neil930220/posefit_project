@@ -144,20 +144,28 @@ export default {
         // 若註冊成功，導向登入頁
         window.location.href = '/accounts/login/';
       } catch (err) {
-       console.log('server response:', err.response.data);
+        console.log('註冊錯誤:', err.response?.data || err.message);
         if (err.response && err.response.status === 400) {
           const data = err.response.data;
           // 處理欄位錯誤
           for (const key in data) {
-            if (key === '__all__') {
-              this.nonFieldError = data[key].join(' ');
-            } else {
+            if (key === '__all__' || key === 'non_field_errors') {
+              // 處理非欄位錯誤（如密碼不一致等）
+              const errorArray = Array.isArray(data[key]) ? data[key] : [data[key]];
+              this.nonFieldError = errorArray.join(' ');
+            } else if (Array.isArray(data[key])) {
+              // REST Framework 返回的錯誤通常是陣列
               this.errors[key] = data[key];
+            } else {
+              // 單一錯誤訊息
+              this.errors[key] = [data[key]];
             }
           }
-        } else {
+        } else if (err.response && err.response.status === 500) {
           this.nonFieldError = '伺服器錯誤，請稍後再試';
-          console.log("result:", this.form);
+        } else {
+          this.nonFieldError = '註冊失敗，請檢查網路連線或稍後再試';
+          console.error("註冊錯誤詳情:", err);
         }
       } finally {
         this.loading = false;
