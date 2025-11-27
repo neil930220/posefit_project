@@ -26,7 +26,7 @@
             to="/"
             class="text-2xl font-bold hover:text-gray-200 transition-all duration-300 transform hover:scale-105 mr-10"
           >
-            <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Post</span><span class="text-white">Fit</span>
+            <span class="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Pose</span><span class="text-white">Fit</span>
           </RouterLink>
 
           <!-- Desktop Navigation -->
@@ -202,7 +202,7 @@
               <!-- Header Section -->
               <div class="p-6 border-b border-gray-600 bg-gradient-to-r from-gray-800 to-gray-700">
                 <div class="flex items-center justify-between mb-4">
-                  <h2 class="text-xl font-bold text-white">PostFit</h2>
+                  <h2 class="text-xl font-bold text-white">PoseFit</h2>
                   <button 
                     @click="isMobileMenuOpen = false"
                     class="text-gray-400 hover:text-white transition-colors"
@@ -366,7 +366,7 @@
 
         <!-- Left: Logo & Tagline -->
         <div>
-          <h3 class="text-2xl font-semibold text-white mb-4">PostFit</h3>
+          <h3 class="text-2xl font-semibold text-white mb-4">PoseFit</h3>
           <p class="space-y-2">
             <span>用科技打造你的健康生活</span><br/>
             <span>AI 食物辨識・姿勢偵測，讓運動與飲食更有效、更安心。</span>
